@@ -259,6 +259,32 @@ export class DatabaseStorage implements IStorage {
 
   async fulfillSalesOrderItems(orderId: number, fulfillments: { itemId: number; quantity: number }[]): Promise<void> {
     for (const fulfillment of fulfillments) {
+      // Get current order item details
+      const [orderItem] = await db
+        .select()
+        .from(salesOrderItems)
+        .where(eq(salesOrderItems.id, fulfillment.itemId));
+      
+      if (!orderItem) {
+        throw new Error(`Order item ${fulfillment.itemId} not found`);
+      }
+      
+      // Calculate remaining quantity that can be fulfilled
+      const remainingToFulfill = orderItem.quantity - orderItem.fulfilled;
+      if (fulfillment.quantity > remainingToFulfill) {
+        throw new Error(`Cannot fulfill ${fulfillment.quantity} pieces. Only ${remainingToFulfill} pieces remaining to fulfill.`);
+      }
+      
+      // Get current inventory for this product
+      const inventory = await this.getInventory();
+      const productInventory = inventory.find(item => item.id === orderItem.productId);
+      
+      if (!productInventory || productInventory.currentStock < fulfillment.quantity) {
+        const availableStock = productInventory?.currentStock || 0;
+        throw new Error(`Insufficient stock. Available: ${availableStock} pieces, requested: ${fulfillment.quantity} pieces.`);
+      }
+      
+      // Only fulfill if validation passes
       await db
         .update(salesOrderItems)
         .set({ 
@@ -307,7 +333,7 @@ export class DatabaseStorage implements IStorage {
         .from(production)
         .where(eq(production.productId, product.id));
       
-      const totalProduced = productionResult[0]?.total || 0;
+      const totalProduced = Number(productionResult[0]?.total || 0);
 
       // Get total sold (fulfilled)
       const salesResult = await db
@@ -315,7 +341,7 @@ export class DatabaseStorage implements IStorage {
         .from(salesOrderItems)
         .where(eq(salesOrderItems.productId, product.id));
       
-      const totalSold = salesResult[0]?.total || 0;
+      const totalSold = Number(salesResult[0]?.total || 0);
 
       // Get stock adjustments
       const adjustmentsResult = await db
@@ -323,7 +349,7 @@ export class DatabaseStorage implements IStorage {
         .from(stockAdjustments)
         .where(eq(stockAdjustments.productId, product.id));
       
-      const adjustments = adjustmentsResult[0]?.total || 0;
+      const adjustments = Number(adjustmentsResult[0]?.total || 0);
 
       const currentStock = totalProduced - totalSold + adjustments;
 

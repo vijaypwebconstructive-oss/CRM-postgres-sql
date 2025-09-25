@@ -162,6 +162,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.fulfillSalesOrderItems(orderId, fulfillments);
       res.json({ message: "Order fulfilled successfully" });
     } catch (error) {
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
       res.status(500).json({ message: "Failed to fulfill order" });
     }
   });

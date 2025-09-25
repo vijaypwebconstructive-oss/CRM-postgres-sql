@@ -129,6 +129,7 @@ export const insertSalesOrderSchema = createInsertSchema(salesOrders).omit({
 
 export const insertSalesOrderItemSchema = createInsertSchema(salesOrderItems).omit({
   id: true,
+  salesOrderId: true,
   fulfilled: true,
   createdAt: true,
 });
