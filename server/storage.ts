@@ -1,0 +1,383 @@
+import { 
+  products, parties, production, salesOrders, salesOrderItems, stockAdjustments,
+  type Product, type InsertProduct,
+  type Party, type InsertParty,
+  type Production, type InsertProduction, type ProductionWithProduct,
+  type SalesOrder, type InsertSalesOrder, type SalesOrderWithParty, type SalesOrderWithItems,
+  type SalesOrderItem, type InsertSalesOrderItem,
+  type StockAdjustment, type InsertStockAdjustment,
+  type InventoryItem
+} from "@shared/schema";
+import { db } from "./db";
+import { eq, desc, sql, and } from "drizzle-orm";
+
+export interface IStorage {
+  // Products
+  getProducts(): Promise<Product[]>;
+  getProduct(id: number): Promise<Product | undefined>;
+  createProduct(product: InsertProduct): Promise<Product>;
+  updateProduct(id: number, product: Partial<InsertProduct>): Promise<Product>;
+  deleteProduct(id: number): Promise<void>;
+
+  // Parties
+  getParties(): Promise<Party[]>;
+  getParty(id: number): Promise<Party | undefined>;
+  createParty(party: InsertParty): Promise<Party>;
+  updateParty(id: number, party: Partial<InsertParty>): Promise<Party>;
+  deleteParty(id: number): Promise<void>;
+
+  // Production
+  getProduction(): Promise<ProductionWithProduct[]>;
+  getProductionRecord(id: number): Promise<ProductionWithProduct | undefined>;
+  createProductionRecord(production: InsertProduction): Promise<Production>;
+  updateProductionRecord(id: number, production: Partial<InsertProduction>): Promise<Production>;
+  deleteProductionRecord(id: number): Promise<void>;
+
+  // Sales Orders
+  getSalesOrders(): Promise<SalesOrderWithParty[]>;
+  getSalesOrder(id: number): Promise<SalesOrderWithItems | undefined>;
+  createSalesOrder(salesOrder: InsertSalesOrder, items: InsertSalesOrderItem[]): Promise<SalesOrder>;
+  updateSalesOrderStatus(id: number, status: string): Promise<SalesOrder>;
+  fulfillSalesOrderItems(orderId: number, fulfillments: { itemId: number; quantity: number }[]): Promise<void>;
+
+  // Stock Adjustments
+  getStockAdjustments(): Promise<StockAdjustment[]>;
+  createStockAdjustment(adjustment: InsertStockAdjustment): Promise<StockAdjustment>;
+
+  // Inventory
+  getInventory(): Promise<InventoryItem[]>;
+
+  // Dashboard
+  getDashboardMetrics(): Promise<{
+    todayProduction: number;
+    pendingOrders: number;
+    lowStockItems: number;
+    monthlyRevenue: number;
+  }>;
+}
+
+export class DatabaseStorage implements IStorage {
+  async getProducts(): Promise<Product[]> {
+    return await db.select().from(products).orderBy(desc(products.createdAt));
+  }
+
+  async getProduct(id: number): Promise<Product | undefined> {
+    const [product] = await db.select().from(products).where(eq(products.id, id));
+    return product || undefined;
+  }
+
+  async createProduct(product: InsertProduct): Promise<Product> {
+    const [newProduct] = await db.insert(products).values(product).returning();
+    return newProduct;
+  }
+
+  async updateProduct(id: number, product: Partial<InsertProduct>): Promise<Product> {
+    const [updatedProduct] = await db
+      .update(products)
+      .set(product)
+      .where(eq(products.id, id))
+      .returning();
+    return updatedProduct;
+  }
+
+  async deleteProduct(id: number): Promise<void> {
+    await db.delete(products).where(eq(products.id, id));
+  }
+
+  async getParties(): Promise<Party[]> {
+    return await db.select().from(parties).orderBy(desc(parties.createdAt));
+  }
+
+  async getParty(id: number): Promise<Party | undefined> {
+    const [party] = await db.select().from(parties).where(eq(parties.id, id));
+    return party || undefined;
+  }
+
+  async createParty(party: InsertParty): Promise<Party> {
+    const [newParty] = await db.insert(parties).values(party).returning();
+    return newParty;
+  }
+
+  async updateParty(id: number, party: Partial<InsertParty>): Promise<Party> {
+    const [updatedParty] = await db
+      .update(parties)
+      .set(party)
+      .where(eq(parties.id, id))
+      .returning();
+    return updatedParty;
+  }
+
+  async deleteParty(id: number): Promise<void> {
+    await db.delete(parties).where(eq(parties.id, id));
+  }
+
+  async getProduction(): Promise<ProductionWithProduct[]> {
+    return await db
+      .select()
+      .from(production)
+      .leftJoin(products, eq(production.productId, products.id))
+      .orderBy(desc(production.createdAt))
+      .then(rows => 
+        rows.map(row => ({
+          ...row.production,
+          product: row.products!
+        }))
+      );
+  }
+
+  async getProductionRecord(id: number): Promise<ProductionWithProduct | undefined> {
+    const rows = await db
+      .select()
+      .from(production)
+      .leftJoin(products, eq(production.productId, products.id))
+      .where(eq(production.id, id));
+    
+    if (rows.length === 0) return undefined;
+    
+    const row = rows[0];
+    return {
+      ...row.production,
+      product: row.products!
+    };
+  }
+
+  async createProductionRecord(productionData: InsertProduction): Promise<Production> {
+    // Get product to calculate pieces
+    const [product] = await db.select().from(products).where(eq(products.id, productionData.productId));
+    if (!product) throw new Error("Product not found");
+
+    const pieces = Math.floor((parseFloat(productionData.quantityKg) * 1000) / parseFloat(product.weightGrams));
+    
+    const [newProduction] = await db
+      .insert(production)
+      .values({
+        ...productionData,
+        pieces
+      })
+      .returning();
+    
+    return newProduction;
+  }
+
+  async updateProductionRecord(id: number, productionData: Partial<InsertProduction>): Promise<Production> {
+    let updateData: Partial<InsertProduction> & { pieces?: number } = { ...productionData };
+
+    // Recalculate pieces if quantity or product changed
+    if (productionData.quantityKg || productionData.productId) {
+      const [existingRecord] = await db.select().from(production).where(eq(production.id, id));
+      const productId = productionData.productId || existingRecord.productId;
+      const quantityKg = productionData.quantityKg || existingRecord.quantityKg;
+
+      const [product] = await db.select().from(products).where(eq(products.id, productId));
+      if (product) {
+        const pieces = Math.floor((parseFloat(quantityKg) * 1000) / parseFloat(product.weightGrams));
+        updateData = { ...updateData, pieces };
+      }
+    }
+
+    const [updatedProduction] = await db
+      .update(production)
+      .set(updateData)
+      .where(eq(production.id, id))
+      .returning();
+    
+    return updatedProduction;
+  }
+
+  async deleteProductionRecord(id: number): Promise<void> {
+    await db.delete(production).where(eq(production.id, id));
+  }
+
+  async getSalesOrders(): Promise<SalesOrderWithParty[]> {
+    return await db
+      .select()
+      .from(salesOrders)
+      .leftJoin(parties, eq(salesOrders.partyId, parties.id))
+      .orderBy(desc(salesOrders.createdAt))
+      .then(rows =>
+        rows.map(row => ({
+          ...row.sales_orders,
+          party: row.parties!
+        }))
+      );
+  }
+
+  async getSalesOrder(id: number): Promise<SalesOrderWithItems | undefined> {
+    const orderRows = await db
+      .select()
+      .from(salesOrders)
+      .leftJoin(parties, eq(salesOrders.partyId, parties.id))
+      .where(eq(salesOrders.id, id));
+
+    if (orderRows.length === 0) return undefined;
+
+    const itemRows = await db
+      .select()
+      .from(salesOrderItems)
+      .leftJoin(products, eq(salesOrderItems.productId, products.id))
+      .where(eq(salesOrderItems.salesOrderId, id));
+
+    const orderRow = orderRows[0];
+    return {
+      ...orderRow.sales_orders,
+      party: orderRow.parties!,
+      items: itemRows.map(row => ({
+        ...row.sales_order_items,
+        product: row.products!
+      }))
+    };
+  }
+
+  async createSalesOrder(salesOrderData: InsertSalesOrder, items: InsertSalesOrderItem[]): Promise<SalesOrder> {
+    const [newOrder] = await db
+      .insert(salesOrders)
+      .values({
+        ...salesOrderData,
+        itemCount: items.length
+      })
+      .returning();
+
+    await db.insert(salesOrderItems).values(
+      items.map(item => ({
+        ...item,
+        salesOrderId: newOrder.id
+      }))
+    );
+
+    return newOrder;
+  }
+
+  async updateSalesOrderStatus(id: number, status: "pending" | "partial_invoice" | "fully_invoiced" | "cancelled"): Promise<SalesOrder> {
+    const [updatedOrder] = await db
+      .update(salesOrders)
+      .set({ status })
+      .where(eq(salesOrders.id, id))
+      .returning();
+    
+    return updatedOrder;
+  }
+
+  async fulfillSalesOrderItems(orderId: number, fulfillments: { itemId: number; quantity: number }[]): Promise<void> {
+    for (const fulfillment of fulfillments) {
+      await db
+        .update(salesOrderItems)
+        .set({ 
+          fulfilled: sql`${salesOrderItems.fulfilled} + ${fulfillment.quantity}`
+        })
+        .where(eq(salesOrderItems.id, fulfillment.itemId));
+    }
+
+    // Update order status based on fulfillment
+    const items = await db
+      .select()
+      .from(salesOrderItems)
+      .where(eq(salesOrderItems.salesOrderId, orderId));
+
+    const allFulfilled = items.every(item => item.fulfilled >= item.quantity);
+    const anyFulfilled = items.some(item => item.fulfilled > 0);
+
+    let newStatus: "pending" | "partial_invoice" | "fully_invoiced" | "cancelled" = "pending";
+    if (allFulfilled) {
+      newStatus = "fully_invoiced";
+    } else if (anyFulfilled) {
+      newStatus = "partial_invoice";
+    }
+
+    await this.updateSalesOrderStatus(orderId, newStatus);
+  }
+
+  async getStockAdjustments(): Promise<StockAdjustment[]> {
+    return await db.select().from(stockAdjustments).orderBy(desc(stockAdjustments.createdAt));
+  }
+
+  async createStockAdjustment(adjustment: InsertStockAdjustment): Promise<StockAdjustment> {
+    const [newAdjustment] = await db.insert(stockAdjustments).values(adjustment).returning();
+    return newAdjustment;
+  }
+
+  async getInventory(): Promise<InventoryItem[]> {
+    const productsData = await db.select().from(products);
+    
+    const inventory: InventoryItem[] = [];
+
+    for (const product of productsData) {
+      // Get total production
+      const productionResult = await db
+        .select({ total: sql<number>`COALESCE(SUM(${production.pieces}), 0)` })
+        .from(production)
+        .where(eq(production.productId, product.id));
+      
+      const totalProduced = productionResult[0]?.total || 0;
+
+      // Get total sold (fulfilled)
+      const salesResult = await db
+        .select({ total: sql<number>`COALESCE(SUM(${salesOrderItems.fulfilled}), 0)` })
+        .from(salesOrderItems)
+        .where(eq(salesOrderItems.productId, product.id));
+      
+      const totalSold = salesResult[0]?.total || 0;
+
+      // Get stock adjustments
+      const adjustmentsResult = await db
+        .select({ total: sql<number>`COALESCE(SUM(${stockAdjustments.quantity}), 0)` })
+        .from(stockAdjustments)
+        .where(eq(stockAdjustments.productId, product.id));
+      
+      const adjustments = adjustmentsResult[0]?.total || 0;
+
+      const currentStock = totalProduced - totalSold + adjustments;
+
+      inventory.push({
+        ...product,
+        currentStock,
+        totalProduced,
+        totalSold,
+        adjustments
+      });
+    }
+
+    return inventory;
+  }
+
+  async getDashboardMetrics(): Promise<{
+    todayProduction: number;
+    pendingOrders: number;
+    lowStockItems: number;
+    monthlyRevenue: number;
+  }> {
+    const today = new Date().toISOString().split('T')[0];
+    const thisMonth = new Date().toISOString().slice(0, 7);
+
+    // Today's production
+    const todayProductionResult = await db
+      .select({ total: sql<number>`COALESCE(SUM(${production.pieces}), 0)` })
+      .from(production)
+      .where(eq(production.date, today));
+    
+    const todayProduction = todayProductionResult[0]?.total || 0;
+
+    // Pending orders
+    const pendingOrdersResult = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(salesOrders)
+      .where(eq(salesOrders.status, "pending"));
+    
+    const pendingOrders = pendingOrdersResult[0]?.count || 0;
+
+    // Low stock items (less than 50 pieces)
+    const inventory = await this.getInventory();
+    const lowStockItems = inventory.filter(item => item.currentStock < 50).length;
+
+    // Monthly revenue (simplified calculation)
+    const monthlyRevenue = 24000; // Placeholder - would need pricing data
+
+    return {
+      todayProduction,
+      pendingOrders,
+      lowStockItems,
+      monthlyRevenue
+    };
+  }
+}
+
+export const storage = new DatabaseStorage();
