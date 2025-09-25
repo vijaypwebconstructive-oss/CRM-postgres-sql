@@ -16,12 +16,16 @@ export const api = {
   // Production
   getProduction: () => fetch("/api/production").then(res => res.json()),
   createProduction: (data: any) => apiRequest("POST", "/api/production", data),
+  updateProduction: (id: number, data: any) => apiRequest("PUT", `/api/production/${id}`, data),
+  deleteProduction: (id: number) => apiRequest("DELETE", `/api/production/${id}`),
 
   // Sales
   getSalesOrders: () => fetch("/api/sales").then(res => res.json()),
   getSalesOrder: (id: number) => fetch(`/api/sales/${id}`).then(res => res.json()),
   createSalesOrder: (data: any) => apiRequest("POST", "/api/sales", data),
   fulfillOrder: (id: number, data: any) => apiRequest("POST", `/api/sales/${id}/fulfill`, data),
+  deleteSalesOrder: (id: number) => apiRequest("DELETE", `/api/sales/${id}`),
+  cancelInvoice: (id: number) => apiRequest("PUT", `/api/sales/${id}/cancel`),
 
   // Stock Adjustments
   getStockAdjustments: () => fetch("/api/stock-adjustments").then(res => res.json()),

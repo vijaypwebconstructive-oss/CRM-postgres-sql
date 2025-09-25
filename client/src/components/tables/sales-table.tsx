@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, Package } from "lucide-react";
+import { Eye, Package, Trash2, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
@@ -14,9 +14,13 @@ interface SalesTableProps {
   salesOrders: SalesOrderWithParty[];
   onFulfill: (orderId: number, fulfillments: any) => void;
   isFulfilling: boolean;
+  onDelete: (orderId: number) => void;
+  onCancel: (orderId: number) => void;
+  isDeleting?: boolean;
+  isCancelling?: boolean;
 }
 
-export default function SalesTable({ salesOrders, onFulfill, isFulfilling }: SalesTableProps) {
+export default function SalesTable({ salesOrders, onFulfill, isFulfilling, onDelete, onCancel, isDeleting, isCancelling }: SalesTableProps) {
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isFulfillModalOpen, setIsFulfillModalOpen] = useState(false);
@@ -138,6 +142,26 @@ export default function SalesTable({ salesOrders, onFulfill, isFulfilling }: Sal
                         <Package className="w-4 h-4" />
                       </Button>
                     ) : null}
+                    {order.status !== "cancelled" ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onCancel(order.id)}
+                        className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                        data-testid={`button-cancel-order-${order.id}`}
+                      >
+                        <XCircle className="w-4 h-4" />
+                      </Button>
+                    ) : null}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onDelete(order.id)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      data-testid={`button-delete-order-${order.id}`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
                 </td>
               </tr>

@@ -145,6 +145,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/production/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertProductionSchema.partial().parse(req.body);
+      const production = await storage.updateProductionRecord(id, validatedData);
+      res.json(production);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid production data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update production record" });
+    }
+  });
+
+  app.delete("/api/production/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteProductionRecord(id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete production record" });
+    }
+  });
+
   // Sales Orders
   app.get("/api/sales", async (_req, res) => {
     try {
@@ -196,6 +220,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: error.message });
       }
       res.status(500).json({ message: "Failed to fulfill order" });
+    }
+  });
+
+  app.delete("/api/sales/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteSalesOrder(id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete sales order" });
+    }
+  });
+
+  app.put("/api/sales/:id/cancel", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const salesOrder = await storage.cancelInvoice(id);
+      res.json(salesOrder);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to cancel invoice" });
     }
   });
 

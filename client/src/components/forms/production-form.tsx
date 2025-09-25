@@ -19,15 +19,16 @@ interface ProductionFormProps {
   products: Product[];
   onSubmit: (data: ProductionFormData) => void;
   isLoading: boolean;
+  defaultValues?: Partial<ProductionFormData>;
 }
 
-export default function ProductionForm({ products, onSubmit, isLoading }: ProductionFormProps) {
+export default function ProductionForm({ products, onSubmit, isLoading, defaultValues }: ProductionFormProps) {
   const form = useForm<ProductionFormData>({
     resolver: zodResolver(productionFormSchema),
     defaultValues: {
-      productId: 0,
-      quantityKg: "",
-      date: new Date().toISOString().split('T')[0],
+      productId: defaultValues?.productId || 0,
+      quantityKg: defaultValues?.quantityKg || "",
+      date: defaultValues?.date || new Date().toISOString().split('T')[0],
     },
   });
 

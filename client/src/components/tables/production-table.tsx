@@ -6,9 +6,11 @@ import type { ProductionWithProduct } from "@shared/schema";
 
 interface ProductionTableProps {
   production: ProductionWithProduct[];
+  onEdit: (record: ProductionWithProduct) => void;
+  onDelete: (record: ProductionWithProduct) => void;
 }
 
-export default function ProductionTable({ production }: ProductionTableProps) {
+export default function ProductionTable({ production, onEdit, onDelete }: ProductionTableProps) {
   if (production.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground" data-testid="no-production-records">
@@ -53,6 +55,7 @@ export default function ProductionTable({ production }: ProductionTableProps) {
                   <Button 
                     variant="ghost" 
                     size="sm"
+                    onClick={() => onEdit(record)}
                     data-testid={`button-edit-production-${record.id}`}
                   >
                     <Edit className="w-4 h-4" />
@@ -60,6 +63,8 @@ export default function ProductionTable({ production }: ProductionTableProps) {
                   <Button
                     variant="ghost"
                     size="sm"
+                    onClick={() => onDelete(record)}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
                     data-testid={`button-delete-production-${record.id}`}
                   >
                     <Trash2 className="w-4 h-4" />

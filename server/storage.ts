@@ -39,6 +39,8 @@ export interface IStorage {
   createSalesOrder(salesOrder: InsertSalesOrder, items: InsertSalesOrderItem[]): Promise<SalesOrder>;
   updateSalesOrderStatus(id: number, status: string): Promise<SalesOrder>;
   fulfillSalesOrderItems(orderId: number, fulfillments: { itemId: number; quantity: number }[]): Promise<void>;
+  deleteSalesOrder(id: number): Promise<void>;
+  cancelInvoice(id: number): Promise<SalesOrder>;
 
   // Stock Adjustments
   getStockAdjustments(): Promise<StockAdjustment[]>;
@@ -344,6 +346,18 @@ export class DatabaseStorage implements IStorage {
     }
 
     await this.updateSalesOrderStatus(orderId, newStatus);
+  }
+
+  async deleteSalesOrder(id: number): Promise<void> {
+    // Note: This deletion does NOT add stock back to inventory as per requirements
+    // First delete related sales order items
+    await db.delete(salesOrderItems).where(eq(salesOrderItems.salesOrderId, id));
+    // Then delete the sales order
+    await db.delete(salesOrders).where(eq(salesOrders.id, id));
+  }
+
+  async cancelInvoice(id: number): Promise<SalesOrder> {
+    return await this.updateSalesOrderStatus(id, "cancelled");
   }
 
   async getStockAdjustments(): Promise<StockAdjustment[]> {
