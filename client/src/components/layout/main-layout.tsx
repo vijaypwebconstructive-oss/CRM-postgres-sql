@@ -1,6 +1,7 @@
-import { Bell, Settings, LogOut, User } from "lucide-react";
+import { Bell, Settings, LogOut, User, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
+import { useState } from "react";
 import AppSidebar from "./app-sidebar";
 
 interface MainLayoutProps {
@@ -9,34 +10,54 @@ interface MainLayoutProps {
 
 export default function MainLayout({ children }: MainLayoutProps) {
   const { user, logout, isLoggingOut } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <div className="flex h-screen bg-background">
-      <AppSidebar />
+      <AppSidebar 
+        isOpen={sidebarOpen} 
+        onClose={() => setSidebarOpen(false)} 
+      />
       
-      <main className="flex-1 overflow-hidden">
-        <header className="bg-card border-b border-border px-6 py-4" data-testid="header">
+      <main className="flex-1 overflow-hidden lg:ml-0">
+        <header className="bg-card border-b border-border px-4 sm:px-6 py-4" data-testid="header">
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold" data-testid="page-title">Manufacturing Dashboard</h2>
-              <p className="text-muted-foreground" data-testid="page-description">
-                Real-time overview of your production operations
-              </p>
-            </div>
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="icon" data-testid="button-notifications">
+              {/* Mobile Menu Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSidebarOpen(true)}
+                className="lg:hidden"
+                data-testid="button-menu"
+              >
+                <Menu className="w-5 h-5" />
+              </Button>
+              
+              <div className="min-w-0">
+                <h2 className="text-lg sm:text-2xl font-bold truncate" data-testid="page-title">
+                  Manufacturing Dashboard
+                </h2>
+                <p className="text-muted-foreground text-sm hidden sm:block" data-testid="page-description">
+                  Real-time overview of your production operations
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <Button variant="ghost" size="icon" className="hidden sm:flex" data-testid="button-notifications">
                 <Bell className="w-5 h-5 text-muted-foreground" />
               </Button>
-              <Button variant="ghost" size="icon" data-testid="button-settings">
+              <Button variant="ghost" size="icon" className="hidden sm:flex" data-testid="button-settings">
                 <Settings className="w-5 h-5 text-muted-foreground" />
               </Button>
               
               {/* User Info */}
               {user && (
-                <div className="flex items-center space-x-3">
-                  <div className="flex items-center space-x-2 px-2">
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  <div className="hidden sm:flex items-center space-x-2 px-2">
                     <User className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm font-medium" data-testid="user-name-display">
+                    <span className="text-sm font-medium truncate max-w-32" data-testid="user-name-display">
                       {user.firstName && user.lastName 
                         ? `${user.firstName} ${user.lastName}`
                         : user.email
@@ -59,7 +80,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
           </div>
         </header>
 
-        <div className="p-6 overflow-y-auto h-full" data-testid="main-content">
+        <div className="p-4 sm:p-6 overflow-y-auto h-full" data-testid="main-content">
           {children}
         </div>
       </main>

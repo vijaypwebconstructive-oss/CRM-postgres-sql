@@ -103,3 +103,45 @@
 .data-table tr:hover {
   background-color: var(--muted);
 }
+
+/* Mobile-friendly table styles */
+@media (max-width: 768px) {
+  .data-table {
+    min-width: 600px; /* Ensures tables don't get too cramped */
+  }
+  
+  .data-table th,
+  .data-table td {
+    padding: 12px 8px; /* Larger padding for touch devices */
+    white-space: nowrap; /* Prevent text wrapping in cells */
+  }
+  
+  /* Touch-friendly buttons */
+  .data-table button {
+    min-height: 44px; /* iOS recommended touch target size */
+    min-width: 44px;
+  }
+}
+
+/* Improve scroll indicators on mobile */
+.overflow-x-auto {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.overflow-x-auto::-webkit-scrollbar {
+  height: 8px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 4px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb:hover {
+  background-color: var(--muted-foreground);
+}
