@@ -74,9 +74,10 @@ export default function Reports() {
     if (!acc[material]) {
       acc[material] = { totalCost: 0, totalKg: 0 };
     }
-    acc[material].totalCost += item.totalMaterialUsed;
-    // Calculate kg from cost
-    acc[material].totalKg += item.totalMaterialUsed / parseFloat(item.product.rawMaterialPricePerKg);
+    // totalMaterialUsed is already in kg, so add it directly
+    acc[material].totalKg += item.totalMaterialUsed;
+    // Calculate cost by multiplying kg by price per kg
+    acc[material].totalCost += item.totalMaterialUsed * parseFloat(item.product.rawMaterialPricePerKg);
     return acc;
   }, {} as Record<string, { totalCost: number; totalKg: number }>);
 
