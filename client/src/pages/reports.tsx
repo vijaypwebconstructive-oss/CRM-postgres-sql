@@ -145,8 +145,8 @@ export default function Reports() {
               <CardContent className="p-6">
                 <h3 className="text-lg font-semibold mb-2">Material Cost</h3>
                 <p className="text-3xl font-bold text-amber-600" data-testid="total-material-cost-value">
-                  ₹{Object.values(materialConsumption)
-                    .reduce((sum: any, mat: any) => sum + mat.totalCost, 0)
+                  ₹{(Object.values(materialConsumption) as { totalCost: number; totalKg: number }[])
+                    .reduce((sum: number, mat: { totalCost: number; totalKg: number }) => sum + mat.totalCost, 0)
                     .toFixed(2)}
                 </p>
                 <p className="text-sm text-muted-foreground">raw materials used</p>
