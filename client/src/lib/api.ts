@@ -10,6 +10,8 @@ export const api = {
   // Parties
   getParties: () => fetch("/api/parties").then(res => res.json()),
   createParty: (data: any) => apiRequest("POST", "/api/parties", data),
+  updateParty: (id: number, data: any) => apiRequest("PUT", `/api/parties/${id}`, data),
+  deleteParty: (id: number) => apiRequest("DELETE", `/api/parties/${id}`),
 
   // Production
   getProduction: () => fetch("/api/production").then(res => res.json()),

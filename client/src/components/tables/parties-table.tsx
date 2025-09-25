@@ -1,13 +1,15 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit, Phone, MapPin } from "lucide-react";
+import { Edit, Phone, MapPin, Trash2 } from "lucide-react";
 import type { Party } from "@shared/schema";
 
 interface PartiesTableProps {
   parties: Party[];
+  onEdit: (party: Party) => void;
+  onDelete: (party: Party) => void;
 }
 
-export default function PartiesTable({ parties }: PartiesTableProps) {
+export default function PartiesTable({ parties, onEdit, onDelete }: PartiesTableProps) {
   if (parties.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground" data-testid="no-parties">
@@ -54,13 +56,25 @@ export default function PartiesTable({ parties }: PartiesTableProps) {
                 )}
               </td>
               <td className="py-3 text-sm">
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  data-testid={`button-edit-party-${party.id}`}
-                >
-                  <Edit className="w-4 h-4" />
-                </Button>
+                <div className="flex items-center space-x-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => onEdit(party)}
+                    data-testid={`button-edit-party-${party.id}`}
+                  >
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => onDelete(party)}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    data-testid={`button-delete-party-${party.id}`}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
               </td>
             </tr>
           ))}

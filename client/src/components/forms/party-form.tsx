@@ -19,17 +19,18 @@ type PartyFormData = z.infer<typeof partyFormSchema>;
 interface PartyFormProps {
   onSubmit: (data: PartyFormData) => void;
   isLoading: boolean;
+  initialData?: Partial<PartyFormData>;
 }
 
-export default function PartyForm({ onSubmit, isLoading }: PartyFormProps) {
+export default function PartyForm({ onSubmit, isLoading, initialData }: PartyFormProps) {
   const form = useForm<PartyFormData>({
     resolver: zodResolver(partyFormSchema),
     defaultValues: {
-      name: "",
-      address: "",
-      pinCode: "",
-      phoneNumber: "",
-      gstNumber: "",
+      name: initialData?.name || "",
+      address: initialData?.address || "",
+      pinCode: initialData?.pinCode || "",
+      phoneNumber: initialData?.phoneNumber || "",
+      gstNumber: initialData?.gstNumber || "",
     },
   });
 

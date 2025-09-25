@@ -65,6 +65,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.deleteProduct(id);
       res.status(204).send();
     } catch (error) {
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
       res.status(500).json({ message: "Failed to delete product" });
     }
   });
@@ -89,6 +92,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid party data", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to create party" });
+    }
+  });
+
+  app.put("/api/parties/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertPartySchema.partial().parse(req.body);
+      const party = await storage.updateParty(id, validatedData);
+      res.json(party);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid party data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update party" });
+    }
+  });
+
+  app.delete("/api/parties/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteParty(id);
+      res.status(204).send();
+    } catch (error) {
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      res.status(500).json({ message: "Failed to delete party" });
     }
   });
 

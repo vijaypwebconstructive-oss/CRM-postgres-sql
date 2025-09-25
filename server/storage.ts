@@ -81,6 +81,28 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteProduct(id: number): Promise<void> {
+    // Check if product has related records
+    const [productionCount] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(production)
+      .where(eq(production.productId, id));
+
+    const [salesCount] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(salesOrderItems)
+      .where(eq(salesOrderItems.productId, id));
+
+    const [adjustmentCount] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(stockAdjustments)
+      .where(eq(stockAdjustments.productId, id));
+
+    const totalRelated = Number(productionCount.count) + Number(salesCount.count) + Number(adjustmentCount.count);
+    
+    if (totalRelated > 0) {
+      throw new Error(`Cannot delete product. It has ${totalRelated} related records (production, sales, or stock adjustments). Please remove those records first.`);
+    }
+
     await db.delete(products).where(eq(products.id, id));
   }
 
@@ -108,6 +130,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteParty(id: number): Promise<void> {
+    // Check if party has related sales orders
+    const [salesOrderCount] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(salesOrders)
+      .where(eq(salesOrders.partyId, id));
+
+    const totalRelated = Number(salesOrderCount.count);
+    
+    if (totalRelated > 0) {
+      throw new Error(`Cannot delete party. It has ${totalRelated} related sales orders. Please remove those orders first.`);
+    }
+
     await db.delete(parties).where(eq(parties.id, id));
   }
 
