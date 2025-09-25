@@ -1,17 +1,22 @@
 import { 
-  products, parties, production, salesOrders, salesOrderItems, stockAdjustments,
+  products, parties, production, salesOrders, salesOrderItems, stockAdjustments, users,
   type Product, type InsertProduct,
   type Party, type InsertParty,
   type Production, type InsertProduction, type ProductionWithProduct,
   type SalesOrder, type InsertSalesOrder, type SalesOrderWithParty, type SalesOrderWithItems,
   type SalesOrderItem, type InsertSalesOrderItem,
   type StockAdjustment, type InsertStockAdjustment,
-  type InventoryItem
+  type InventoryItem,
+  type User, type UpsertUser
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, and } from "drizzle-orm";
 
 export interface IStorage {
+  // User operations - Required for Replit Auth integration
+  getUser(id: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
+
   // Products
   getProducts(): Promise<Product[]>;
   getProduct(id: number): Promise<Product | undefined>;
@@ -59,6 +64,27 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  // User operations - Required for Replit Auth integration
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(userData)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return user;
+  }
+
   async getProducts(): Promise<Product[]> {
     return await db.select().from(products).orderBy(desc(products.createdAt));
   }
