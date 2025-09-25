@@ -8,6 +8,7 @@ import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
+import crypto from "crypto";
 
 if (!process.env.REPLIT_DOMAINS) {
   throw new Error("Environment variable REPLIT_DOMAINS not provided");
@@ -40,6 +41,7 @@ export function getSession() {
     cookie: {
       httpOnly: true,
       secure: true,
+      sameSite: 'lax', // CSRF protection
       maxAge: sessionTtl,
     },
   });
@@ -126,7 +128,39 @@ export async function setupAuth(app: Express) {
       );
     });
   });
+
+  // CSRF token endpoint
+  app.get("/api/csrf-token", isAuthenticated, (req: any, res) => {
+    const token = generateCSRFToken();
+    req.session.csrfToken = token;
+    res.json({ csrfToken: token });
+  });
 }
+
+// CSRF protection utilities
+function generateCSRFToken(): string {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+// CSRF validation middleware for unsafe methods
+export const validateCSRF: RequestHandler = (req: any, res, next) => {
+  const method = req.method.toUpperCase();
+  
+  // Only validate CSRF for unsafe methods
+  if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+    const sessionToken = req.session?.csrfToken;
+    const requestToken = req.headers['x-csrf-token'] || req.body._csrf;
+    
+    if (!sessionToken || !requestToken || sessionToken !== requestToken) {
+      return res.status(403).json({ 
+        message: "CSRF token validation failed",
+        code: "CSRF_TOKEN_INVALID" 
+      });
+    }
+  }
+  
+  next();
+};
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
   const user = req.user as any;

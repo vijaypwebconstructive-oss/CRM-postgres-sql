@@ -6,7 +6,7 @@ import {
   insertSalesOrderSchema, insertSalesOrderItemSchema, insertStockAdjustmentSchema
 } from "@shared/schema";
 import { z } from "zod";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated, validateCSRF } from "./replitAuth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware - setup authentication first
@@ -25,7 +25,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Products
-  app.get("/api/products", async (_req, res) => {
+  app.get("/api/products", isAuthenticated, async (_req, res) => {
     try {
       const products = await storage.getProducts();
       res.json(products);
@@ -34,7 +34,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/products/:id", async (req, res) => {
+  app.get("/api/products/:id", isAuthenticated, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const product = await storage.getProduct(id);
@@ -47,7 +47,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/products", async (req, res) => {
+  app.post("/api/products", isAuthenticated, validateCSRF, async (req, res) => {
     try {
       const validatedData = insertProductSchema.parse(req.body);
       const product = await storage.createProduct(validatedData);
@@ -60,7 +60,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/products/:id", async (req, res) => {
+  app.put("/api/products/:id", isAuthenticated, validateCSRF, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const validatedData = insertProductSchema.partial().parse(req.body);
@@ -74,7 +74,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/products/:id", async (req, res) => {
+  app.delete("/api/products/:id", isAuthenticated, validateCSRF, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.deleteProduct(id);
@@ -88,7 +88,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Parties
-  app.get("/api/parties", async (_req, res) => {
+  app.get("/api/parties", isAuthenticated, async (_req, res) => {
     try {
       const parties = await storage.getParties();
       res.json(parties);
@@ -97,7 +97,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/parties", async (req, res) => {
+  app.post("/api/parties", isAuthenticated, validateCSRF, async (req, res) => {
     try {
       const validatedData = insertPartySchema.parse(req.body);
       const party = await storage.createParty(validatedData);
@@ -110,7 +110,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/parties/:id", async (req, res) => {
+  app.put("/api/parties/:id", isAuthenticated, validateCSRF, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const validatedData = insertPartySchema.partial().parse(req.body);
@@ -124,7 +124,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/parties/:id", async (req, res) => {
+  app.delete("/api/parties/:id", isAuthenticated, validateCSRF, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.deleteParty(id);
@@ -138,7 +138,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Production
-  app.get("/api/production", async (_req, res) => {
+  app.get("/api/production", isAuthenticated, async (_req, res) => {
     try {
       const production = await storage.getProduction();
       res.json(production);
@@ -147,7 +147,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/production", async (req, res) => {
+  app.post("/api/production", isAuthenticated, validateCSRF, async (req, res) => {
     try {
       const validatedData = insertProductionSchema.parse(req.body);
       const production = await storage.createProductionRecord(validatedData);
@@ -160,7 +160,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/production/:id", async (req, res) => {
+  app.put("/api/production/:id", isAuthenticated, validateCSRF, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const validatedData = insertProductionSchema.partial().parse(req.body);
@@ -174,7 +174,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/production/:id", async (req, res) => {
+  app.delete("/api/production/:id", isAuthenticated, validateCSRF, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.deleteProductionRecord(id);
@@ -185,7 +185,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Sales Orders
-  app.get("/api/sales", async (_req, res) => {
+  app.get("/api/sales", isAuthenticated, async (_req, res) => {
     try {
       const salesOrders = await storage.getSalesOrders();
       res.json(salesOrders);
@@ -194,7 +194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/sales/:id", async (req, res) => {
+  app.get("/api/sales/:id", isAuthenticated, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const salesOrder = await storage.getSalesOrder(id);
@@ -207,7 +207,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/sales", async (req, res) => {
+  app.post("/api/sales", isAuthenticated, validateCSRF, async (req, res) => {
     try {
       const { order, items } = req.body;
       const validatedOrder = insertSalesOrderSchema.parse(order);
@@ -223,7 +223,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/sales/:id/fulfill", async (req, res) => {
+  app.post("/api/sales/:id/fulfill", isAuthenticated, validateCSRF, async (req, res) => {
     try {
       const orderId = parseInt(req.params.id);
       const { fulfillments } = req.body;
@@ -238,7 +238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/sales/:id", async (req, res) => {
+  app.delete("/api/sales/:id", isAuthenticated, validateCSRF, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.deleteSalesOrder(id);
@@ -248,7 +248,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/sales/:id/cancel", async (req, res) => {
+  app.put("/api/sales/:id/cancel", isAuthenticated, validateCSRF, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const salesOrder = await storage.cancelInvoice(id);
@@ -259,7 +259,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Stock Adjustments
-  app.get("/api/stock-adjustments", async (_req, res) => {
+  app.get("/api/stock-adjustments", isAuthenticated, async (_req, res) => {
     try {
       const adjustments = await storage.getStockAdjustments();
       res.json(adjustments);
@@ -268,7 +268,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/stock-adjustments", async (req, res) => {
+  app.post("/api/stock-adjustments", isAuthenticated, validateCSRF, async (req, res) => {
     try {
       const validatedData = insertStockAdjustmentSchema.parse(req.body);
       const adjustment = await storage.createStockAdjustment(validatedData);
@@ -282,7 +282,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Inventory
-  app.get("/api/inventory", async (_req, res) => {
+  app.get("/api/inventory", isAuthenticated, async (_req, res) => {
     try {
       const inventory = await storage.getInventory();
       res.json(inventory);
@@ -292,7 +292,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dashboard
-  app.get("/api/dashboard/metrics", async (_req, res) => {
+  app.get("/api/dashboard/metrics", isAuthenticated, async (_req, res) => {
     try {
       const metrics = await storage.getDashboardMetrics();
       res.json(metrics);
