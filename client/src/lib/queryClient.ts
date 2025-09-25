@@ -7,14 +7,35 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// Helper to get CSRF token from query cache
+function getCSRFToken(): string | undefined {
+  const data = queryClient.getQueryData(['/api/csrf-token']) as { csrfToken: string } | undefined;
+  return data?.csrfToken;
+}
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  const headers: Record<string, string> = {};
+  
+  if (data) {
+    headers["Content-Type"] = "application/json";
+  }
+  
+  // Add CSRF token for unsafe methods
+  const unsafeMethods = ['POST', 'PUT', 'DELETE', 'PATCH'];
+  if (unsafeMethods.includes(method.toUpperCase())) {
+    const csrfToken = getCSRFToken();
+    if (csrfToken) {
+      headers['X-CSRF-Token'] = csrfToken;
+    }
+  }
+
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });

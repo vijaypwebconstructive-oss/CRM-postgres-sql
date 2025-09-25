@@ -1,5 +1,6 @@
-import { Bell, Settings } from "lucide-react";
+import { Bell, Settings, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
 import AppSidebar from "./app-sidebar";
 
 interface MainLayoutProps {
@@ -7,6 +8,8 @@ interface MainLayoutProps {
 }
 
 export default function MainLayout({ children }: MainLayoutProps) {
+  const { user, logout, isLoggingOut } = useAuth();
+
   return (
     <div className="flex h-screen bg-background">
       <AppSidebar />
@@ -27,6 +30,31 @@ export default function MainLayout({ children }: MainLayoutProps) {
               <Button variant="ghost" size="icon" data-testid="button-settings">
                 <Settings className="w-5 h-5 text-muted-foreground" />
               </Button>
+              
+              {/* User Info */}
+              {user && (
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2 px-2">
+                    <User className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm font-medium" data-testid="user-name-display">
+                      {user.firstName && user.lastName 
+                        ? `${user.firstName} ${user.lastName}`
+                        : user.email
+                      }
+                    </span>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => logout()}
+                    disabled={isLoggingOut}
+                    data-testid="button-logout"
+                    title="Sign out"
+                  >
+                    <LogOut className="w-5 h-5 text-muted-foreground" />
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </header>
