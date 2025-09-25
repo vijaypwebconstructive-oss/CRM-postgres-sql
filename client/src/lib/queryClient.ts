@@ -7,9 +7,26 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-// Helper to get CSRF token from query cache
-function getCSRFToken(): string | undefined {
-  const data = queryClient.getQueryData(['/api/csrf-token']) as { csrfToken: string } | undefined;
+// Helper to get CSRF token - fetch fresh if not available
+async function getCSRFToken(): Promise<string | undefined> {
+  // First try to get from cache
+  let data = queryClient.getQueryData(['/api/csrf-token']) as { csrfToken: string } | undefined;
+  
+  // If not in cache or stale, fetch fresh
+  if (!data?.csrfToken) {
+    try {
+      const response = await fetch('/api/csrf-token', { credentials: 'include' });
+      if (response.ok) {
+        data = await response.json();
+        // Update the cache with fresh token
+        queryClient.setQueryData(['/api/csrf-token'], data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch CSRF token:', error);
+      return undefined;
+    }
+  }
+  
   return data?.csrfToken;
 }
 
@@ -27,7 +44,7 @@ export async function apiRequest(
   // Add CSRF token for unsafe methods
   const unsafeMethods = ['POST', 'PUT', 'DELETE', 'PATCH'];
   if (unsafeMethods.includes(method.toUpperCase())) {
-    const csrfToken = getCSRFToken();
+    const csrfToken = await getCSRFToken();
     if (csrfToken) {
       headers['X-CSRF-Token'] = csrfToken;
     }
