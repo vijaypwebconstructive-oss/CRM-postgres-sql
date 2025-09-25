@@ -130,7 +130,7 @@ export default function SalesForm({ parties, products, onSubmit, isLoading }: Sa
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 max-h-96 overflow-y-auto">
             {fields.map((field, index) => (
               <div key={field.id} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end" data-testid={`order-item-${index}`}>
                 <FormField
