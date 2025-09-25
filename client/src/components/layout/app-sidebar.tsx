@@ -51,17 +51,6 @@ export default function AppSidebar() {
         })}
       </nav>
 
-      <div className="absolute bottom-4 left-4 right-4">
-        <div className="flex items-center space-x-3 p-3 bg-muted rounded-lg" data-testid="user-profile">
-          <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-            <span className="text-sm text-primary-foreground font-medium">JS</span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">John Smith</p>
-            <p className="text-xs text-muted-foreground truncate">Production Manager</p>
-          </div>
-        </div>
-      </div>
     </aside>
   );
 }

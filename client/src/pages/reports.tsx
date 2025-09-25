@@ -53,7 +53,7 @@ export default function Reports() {
     const productionRecords = filteredProduction.filter((p: any) => p.productId === product.id);
     const totalProduced = productionRecords.reduce((sum: any, p: any) => sum + p.pieces, 0);
     const totalMaterialUsed = productionRecords.reduce((sum: any, p: any) => 
-      sum + (parseFloat(p.quantityKg) * parseFloat(product.rawMaterialPricePerKg)), 0
+      sum + parseFloat(p.quantityKg), 0
     );
 
     // Calculate sold quantities (this would need sales order items data in a real implementation)
@@ -187,8 +187,8 @@ export default function Reports() {
                         <td className="p-4" data-testid={`performance-sold-${index}`}>
                           {item.totalSold.toLocaleString()} pieces
                         </td>
-                        <td className="p-4" data-testid={`performance-material-cost-${index}`}>
-                          ₹{item.totalMaterialUsed.toFixed(2)}
+                        <td className="p-4" data-testid={`performance-material-kg-${index}`}>
+                          {item.totalMaterialUsed.toFixed(2)} kg
                         </td>
                         <td className="p-4" data-testid={`performance-material-type-${index}`}>
                           <Badge variant="outline">{item.materialType}</Badge>
