@@ -1,5 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import multer from "multer";
+import * as XLSX from "xlsx";
 import { storage } from "./storage";
 import { 
   insertProductSchema, insertPartySchema, insertProductionSchema, 
@@ -7,6 +9,25 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { setupAuth, isAuthenticated, validateCSRF } from "./replitAuth";
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Accept only Excel files
+    if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
+        file.mimetype === 'application/vnd.ms-excel' ||
+        file.originalname.endsWith('.xlsx') || 
+        file.originalname.endsWith('.xls')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only Excel files are allowed'));
+    }
+  }
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware - setup authentication first
@@ -134,6 +155,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: error.message });
       }
       res.status(500).json({ message: "Failed to delete party" });
+    }
+  });
+
+  // Bulk upload endpoints
+  app.post("/api/products/bulk", isAuthenticated, validateCSRF, upload.single('excel'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No Excel file uploaded" });
+      }
+
+      // Parse Excel file
+      const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const data = XLSX.utils.sheet_to_json(worksheet);
+
+      const results = {
+        success: 0,
+        failed: 0,
+        errors: [] as any[]
+      };
+
+      // Process each row
+      for (const [index, row] of data.entries()) {
+        try {
+          // Map Excel columns to our schema
+          const productData = {
+            name: row['Product Name'] || row['name'],
+            weightGrams: row['Weight (grams)'] || row['weightGrams'] || '0',
+            rawMaterialType: row['Material Type'] || row['rawMaterialType'] || 'Steel',
+            rawMaterialPricePerKg: row['Material Price/KG'] || row['rawMaterialPricePerKg'] || '0'
+          };
+
+          // Validate data
+          const validatedData = insertProductSchema.parse(productData);
+          await storage.createProduct(validatedData);
+          results.success++;
+        } catch (error) {
+          results.failed++;
+          results.errors.push({
+            row: index + 2, // Excel row number (starting from 2 due to header)
+            data: row,
+            error: error instanceof z.ZodError ? error.errors : error.message
+          });
+        }
+      }
+
+      res.json({
+        message: `Bulk upload completed. ${results.success} products added, ${results.failed} failed.`,
+        results
+      });
+    } catch (error) {
+      console.error("Bulk upload error:", error);
+      res.status(500).json({ message: "Failed to process bulk upload" });
+    }
+  });
+
+  app.post("/api/parties/bulk", isAuthenticated, validateCSRF, upload.single('excel'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No Excel file uploaded" });
+      }
+
+      // Parse Excel file
+      const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const data = XLSX.utils.sheet_to_json(worksheet);
+
+      const results = {
+        success: 0,
+        failed: 0,
+        errors: [] as any[]
+      };
+
+      // Process each row
+      for (const [index, row] of data.entries()) {
+        try {
+          // Map Excel columns to our schema
+          const partyData = {
+            name: row['Party Name'] || row['name'],
+            address: row['Address'] || row['address'] || '',
+            pinCode: row['Pin Code'] || row['pinCode'] || '',
+            phoneNumber: row['Phone Number'] || row['phoneNumber'] || '',
+            gstNumber: row['GST Number'] || row['gstNumber'] || null
+          };
+
+          // Validate data
+          const validatedData = insertPartySchema.parse(partyData);
+          await storage.createParty(validatedData);
+          results.success++;
+        } catch (error) {
+          results.failed++;
+          results.errors.push({
+            row: index + 2, // Excel row number (starting from 2 due to header)
+            data: row,
+            error: error instanceof z.ZodError ? error.errors : error.message
+          });
+        }
+      }
+
+      res.json({
+        message: `Bulk upload completed. ${results.success} parties added, ${results.failed} failed.`,
+        results
+      });
+    } catch (error) {
+      console.error("Bulk upload error:", error);
+      res.status(500).json({ message: "Failed to process bulk upload" });
     }
   });
 
