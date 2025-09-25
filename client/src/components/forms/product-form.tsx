@@ -4,7 +4,6 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const productFormSchema = z.object({
   name: z.string().min(1, "Product name is required"),
@@ -20,15 +19,6 @@ interface ProductFormProps {
   isLoading: boolean;
 }
 
-const materialTypes = [
-  "Mild Steel",
-  "Stainless Steel",
-  "Aluminum",
-  "Brass",
-  "Copper",
-  "Iron",
-  "Plastic",
-];
 
 export default function ProductForm({ onSubmit, isLoading }: ProductFormProps) {
   const form = useForm<ProductFormData>({
@@ -82,20 +72,9 @@ export default function ProductForm({ onSubmit, isLoading }: ProductFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Raw Material Type</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger data-testid="select-material-type">
-                    <SelectValue placeholder="Select material..." />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {materialTypes.map((material) => (
-                    <SelectItem key={material} value={material}>
-                      {material}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FormControl>
+                <Input placeholder="e.g., Mild Steel, Aluminum" {...field} data-testid="input-material-type" />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
