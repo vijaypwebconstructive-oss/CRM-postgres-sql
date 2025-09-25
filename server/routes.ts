@@ -178,7 +178,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       // Process each row
-      for (const [index, row] of data.entries()) {
+      for (let index = 0; index < data.length; index++) {
+        const row = data[index] as any;
         try {
           // Map Excel columns to our schema
           const productData = {
@@ -197,7 +198,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           results.errors.push({
             row: index + 2, // Excel row number (starting from 2 due to header)
             data: row,
-            error: error instanceof z.ZodError ? error.errors : error.message
+            error: error instanceof z.ZodError ? error.errors : (error as Error).message
           });
         }
       }
@@ -231,7 +232,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       // Process each row
-      for (const [index, row] of data.entries()) {
+      for (let index = 0; index < data.length; index++) {
+        const row = data[index] as any;
         try {
           // Map Excel columns to our schema
           const partyData = {
@@ -251,7 +253,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           results.errors.push({
             row: index + 2, // Excel row number (starting from 2 due to header)
             data: row,
-            error: error instanceof z.ZodError ? error.errors : error.message
+            error: error instanceof z.ZodError ? error.errors : (error as Error).message
           });
         }
       }

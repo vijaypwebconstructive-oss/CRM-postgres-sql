@@ -3,15 +3,17 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus } from "lucide-react";
+import { Plus, Upload } from "lucide-react";
 import ProductForm from "@/components/forms/product-form";
 import ProductsTable from "@/components/tables/products-table";
+import BulkUpload from "@/components/forms/bulk-upload";
 import { api } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Products() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
   const { toast } = useToast();
 
   const { data: products, isLoading } = useQuery({
@@ -64,6 +66,11 @@ export default function Products() {
     deleteProductMutation.mutate(id);
   };
 
+  const handleBulkUploadSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+    setIsBulkUploadOpen(false);
+  };
+
   if (isLoading) {
     return <div data-testid="loading-products">Loading products...</div>;
   }
@@ -79,23 +86,46 @@ export default function Products() {
                 Manage your product catalog with weight, material, and cost information
               </p>
             </div>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button data-testid="button-add-product">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Product
-                </Button>
-              </DialogTrigger>
-              <DialogContent data-testid="add-product-dialog">
-                <DialogHeader>
-                  <DialogTitle>Add New Product</DialogTitle>
-                </DialogHeader>
-                <ProductForm
-                  onSubmit={handleCreateProduct}
-                  isLoading={createProductMutation.isPending}
-                />
-              </DialogContent>
-            </Dialog>
+            <div className="flex gap-2">
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button data-testid="button-add-product">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Product
+                  </Button>
+                </DialogTrigger>
+                <DialogContent data-testid="add-product-dialog">
+                  <DialogHeader>
+                    <DialogTitle>Add New Product</DialogTitle>
+                  </DialogHeader>
+                  <ProductForm
+                    onSubmit={handleCreateProduct}
+                    isLoading={createProductMutation.isPending}
+                  />
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={isBulkUploadOpen} onOpenChange={setIsBulkUploadOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" data-testid="button-bulk-upload-products">
+                    <Upload className="w-4 h-4 mr-2" />
+                    Bulk Upload
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl" data-testid="bulk-upload-products-dialog">
+                  <DialogHeader>
+                    <DialogTitle>Bulk Upload Products</DialogTitle>
+                  </DialogHeader>
+                  <BulkUpload
+                    endpoint="/api/products/bulk"
+                    title="Bulk Upload Products"
+                    description="Upload multiple products at once using an Excel file"
+                    templateHeaders={['Product Name', 'Weight (grams)', 'Material Type', 'Material Price/KG']}
+                    onSuccess={handleBulkUploadSuccess}
+                  />
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </CardHeader>
         <CardContent>

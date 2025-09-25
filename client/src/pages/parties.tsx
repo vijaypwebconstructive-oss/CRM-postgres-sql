@@ -4,9 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Plus } from "lucide-react";
+import { Plus, Upload } from "lucide-react";
 import PartyForm from "@/components/forms/party-form";
 import PartiesTable from "@/components/tables/parties-table";
+import BulkUpload from "@/components/forms/bulk-upload";
 import { api } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -15,6 +16,7 @@ export default function Parties() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
   const [selectedParty, setSelectedParty] = useState<any>(null);
   const { toast } = useToast();
 
@@ -108,6 +110,11 @@ export default function Parties() {
     }
   };
 
+  const handleBulkUploadSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ["/api/parties"] });
+    setIsBulkUploadOpen(false);
+  };
+
   if (isLoading) {
     return <div data-testid="loading-parties">Loading parties...</div>;
   }
@@ -123,23 +130,46 @@ export default function Parties() {
                 Manage your customers and suppliers directory
               </p>
             </div>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button data-testid="button-add-party">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Party
-                </Button>
-              </DialogTrigger>
-              <DialogContent data-testid="add-party-dialog">
-                <DialogHeader>
-                  <DialogTitle>Add New Party</DialogTitle>
-                </DialogHeader>
-                <PartyForm
-                  onSubmit={handleCreateParty}
-                  isLoading={createPartyMutation.isPending}
-                />
-              </DialogContent>
-            </Dialog>
+            <div className="flex gap-2">
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button data-testid="button-add-party">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Party
+                  </Button>
+                </DialogTrigger>
+                <DialogContent data-testid="add-party-dialog">
+                  <DialogHeader>
+                    <DialogTitle>Add New Party</DialogTitle>
+                  </DialogHeader>
+                  <PartyForm
+                    onSubmit={handleCreateParty}
+                    isLoading={createPartyMutation.isPending}
+                  />
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={isBulkUploadOpen} onOpenChange={setIsBulkUploadOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" data-testid="button-bulk-upload-parties">
+                    <Upload className="w-4 h-4 mr-2" />
+                    Bulk Upload
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl" data-testid="bulk-upload-parties-dialog">
+                  <DialogHeader>
+                    <DialogTitle>Bulk Upload Parties</DialogTitle>
+                  </DialogHeader>
+                  <BulkUpload
+                    endpoint="/api/parties/bulk"
+                    title="Bulk Upload Parties"
+                    description="Upload multiple parties at once using an Excel file"
+                    templateHeaders={['Party Name', 'Address', 'Pin Code', 'Phone Number', 'GST Number']}
+                    onSuccess={handleBulkUploadSuccess}
+                  />
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
