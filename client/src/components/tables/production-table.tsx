@@ -28,6 +28,7 @@ export default function ProductionTable({ production, onEdit, onDelete }: Produc
             <th className="text-left py-3 text-sm font-medium text-muted-foreground">Product</th>
             <th className="text-left py-3 text-sm font-medium text-muted-foreground">Quantity (KG)</th>
             <th className="text-left py-3 text-sm font-medium text-muted-foreground">Pieces</th>
+            <th className="text-left py-3 text-sm font-medium text-muted-foreground">Cost Per Piece</th>
             <th className="text-left py-3 text-sm font-medium text-muted-foreground">Material Type</th>
             <th className="text-left py-3 text-sm font-medium text-muted-foreground">Actions</th>
           </tr>
@@ -46,6 +47,9 @@ export default function ProductionTable({ production, onEdit, onDelete }: Produc
               </td>
               <td className="py-3 text-sm font-bold" data-testid={`production-pieces-${record.id}`}>
                 {record.pieces.toLocaleString()}
+              </td>
+              <td className="py-3 text-sm font-semibold text-green-700" data-testid={`production-cost-per-piece-${record.id}`}>
+                ₹{((parseFloat(record.product.weightGrams) / 1000) * parseFloat(record.product.rawMaterialPricePerKg)).toFixed(2)}
               </td>
               <td className="py-3 text-sm" data-testid={`production-material-${record.id}`}>
                 <Badge variant="outline">{record.product.rawMaterialType}</Badge>
