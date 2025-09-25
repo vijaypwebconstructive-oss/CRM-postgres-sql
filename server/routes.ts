@@ -183,10 +183,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           // Map Excel columns to our schema
           const productData = {
-            name: row['Product Name'] || row['name'],
-            weightGrams: row['Weight (grams)'] || row['weightGrams'] || '0',
-            rawMaterialType: row['Material Type'] || row['rawMaterialType'] || 'Steel',
-            rawMaterialPricePerKg: row['Material Price/KG'] || row['rawMaterialPricePerKg'] || '0'
+            name: String(row['Product Name'] || row['name'] || ''),
+            weightGrams: String(row['Weight (grams)'] || row['weightGrams'] || '0'),
+            rawMaterialType: String(row['Material Type'] || row['rawMaterialType'] || 'Steel'),
+            rawMaterialPricePerKg: String(row['Material Price/KG'] || row['rawMaterialPricePerKg'] || '0')
           };
 
           // Validate data
@@ -237,10 +237,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           // Map Excel columns to our schema
           const partyData = {
-            name: row['Party Name'] || row['name'],
-            address: row['Address'] || row['address'] || '',
-            pinCode: row['Pin Code'] || row['pinCode'] || '',
-            phoneNumber: row['Phone Number'] || row['phoneNumber'] || '',
+            name: String(row['Party Name'] || row['name'] || ''),
+            address: String(row['Address'] || row['address'] || ''),
+            pinCode: String(row['Pin Code'] || row['pinCode'] || ''),
+            phoneNumber: String(row['Phone Number'] || row['phoneNumber'] || ''),
             gstNumber: row['GST Number'] || row['gstNumber'] || null
           };
 
