@@ -19,7 +19,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         onClose={() => setSidebarOpen(false)} 
       />
       
-      <div className="flex flex-1 lg:ml-0">
+      <div className="flex flex-1 lg:ml-64">
         <main className="flex-1 flex flex-col">
           <header className="bg-card border-b border-border px-4 sm:px-6 py-4" data-testid="header">
             <div className="flex items-center justify-between">
