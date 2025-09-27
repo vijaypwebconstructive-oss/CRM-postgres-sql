@@ -55,7 +55,8 @@ export default function ResponsiveDataTable<T extends { id: number | string }>({
   return (
     <>
       {/* Desktop Table View */}
-      <div className="hidden md:block overflow-x-auto">
+      <div className="hidden md:block">
+        <div className="overflow-x-auto">
         <table className="w-full data-table" data-testid={testId}>
           <thead>
             <tr className="border-b border-border">
@@ -113,6 +114,7 @@ export default function ResponsiveDataTable<T extends { id: number | string }>({
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Mobile Card View */}

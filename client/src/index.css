@@ -104,19 +104,8 @@
   background-color: var(--muted);
 }
 
-/* Mobile-friendly table styles */
+/* Touch-friendly buttons for mobile */
 @media (max-width: 768px) {
-  .data-table {
-    min-width: 600px; /* Ensures tables don't get too cramped */
-  }
-  
-  .data-table th,
-  .data-table td {
-    padding: 12px 8px; /* Larger padding for touch devices */
-    white-space: nowrap; /* Prevent text wrapping in cells */
-  }
-  
-  /* Touch-friendly buttons */
   .data-table button {
     min-height: 44px; /* iOS recommended touch target size */
     min-width: 44px;
