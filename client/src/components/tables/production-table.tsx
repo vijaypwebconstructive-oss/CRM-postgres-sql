@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
+import ResponsiveDataTable from "@/components/ui/responsive-data-table";
 import type { ProductionWithProduct } from "@shared/schema";
 
 interface ProductionTableProps {
@@ -11,74 +11,68 @@ interface ProductionTableProps {
 }
 
 export default function ProductionTable({ production, onEdit, onDelete }: ProductionTableProps) {
-  if (production.length === 0) {
-    return (
-      <div className="text-center py-8 text-muted-foreground" data-testid="no-production-records">
-        No production records found. Add your first production record to track manufacturing output.
-      </div>
-    );
-  }
+  const columns = [
+    {
+      key: 'date' as keyof ProductionWithProduct,
+      label: 'Date',
+      render: (value: string) => format(new Date(value), "MMM dd, yyyy"),
+    },
+    {
+      key: 'product' as keyof ProductionWithProduct,
+      label: 'Product',
+      className: 'font-medium',
+      render: (value: any) => value.name,
+    },
+    {
+      key: 'quantityKg' as keyof ProductionWithProduct,
+      label: 'Quantity (KG)',
+      render: (value: string) => `${parseFloat(value).toFixed(3)} kg`,
+    },
+    {
+      key: 'pieces' as keyof ProductionWithProduct,
+      label: 'Pieces',
+      className: 'font-bold',
+      render: (value: number) => value.toLocaleString(),
+    },
+    {
+      key: 'product' as keyof ProductionWithProduct,
+      label: 'Cost Per Piece',
+      className: 'font-semibold text-green-700',
+      render: (value: any) => 
+        `₹${((parseFloat(value.weightGrams) / 1000) * parseFloat(value.rawMaterialPricePerKg)).toFixed(2)}`,
+    },
+    {
+      key: 'product' as keyof ProductionWithProduct,
+      label: 'Material Type',
+      render: (value: any) => <Badge variant="outline">{value.rawMaterialType}</Badge>,
+    },
+  ];
+
+  const actions = [
+    {
+      label: 'Edit',
+      icon: <Edit className="w-4 h-4" />,
+      onClick: (record: ProductionWithProduct) => onEdit(record),
+      variant: 'ghost' as const,
+      testId: (record: ProductionWithProduct) => `button-edit-production-${record.id}`,
+    },
+    {
+      label: 'Delete',
+      icon: <Trash2 className="w-4 h-4" />,
+      onClick: (record: ProductionWithProduct) => onDelete(record),
+      variant: 'ghost' as const,
+      testId: (record: ProductionWithProduct) => `button-delete-production-${record.id}`,
+    },
+  ];
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full data-table" data-testid="production-table">
-        <thead>
-          <tr className="border-b border-border">
-            <th className="text-left py-3 text-sm font-medium text-muted-foreground">Date</th>
-            <th className="text-left py-3 text-sm font-medium text-muted-foreground">Product</th>
-            <th className="text-left py-3 text-sm font-medium text-muted-foreground">Quantity (KG)</th>
-            <th className="text-left py-3 text-sm font-medium text-muted-foreground">Pieces</th>
-            <th className="text-left py-3 text-sm font-medium text-muted-foreground">Cost Per Piece</th>
-            <th className="text-left py-3 text-sm font-medium text-muted-foreground">Material Type</th>
-            <th className="text-left py-3 text-sm font-medium text-muted-foreground">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {production.map((record) => (
-            <tr key={record.id} className="border-b border-border hover:bg-muted" data-testid={`production-row-${record.id}`}>
-              <td className="py-3 text-sm" data-testid={`production-date-${record.id}`}>
-                {format(new Date(record.date), "MMM dd, yyyy")}
-              </td>
-              <td className="py-3 text-sm font-medium" data-testid={`production-product-${record.id}`}>
-                {record.product.name}
-              </td>
-              <td className="py-3 text-sm" data-testid={`production-quantity-${record.id}`}>
-                {parseFloat(record.quantityKg).toFixed(3)} kg
-              </td>
-              <td className="py-3 text-sm font-bold" data-testid={`production-pieces-${record.id}`}>
-                {record.pieces.toLocaleString()}
-              </td>
-              <td className="py-3 text-sm font-semibold text-green-700" data-testid={`production-cost-per-piece-${record.id}`}>
-                ₹{((parseFloat(record.product.weightGrams) / 1000) * parseFloat(record.product.rawMaterialPricePerKg)).toFixed(2)}
-              </td>
-              <td className="py-3 text-sm" data-testid={`production-material-${record.id}`}>
-                <Badge variant="outline">{record.product.rawMaterialType}</Badge>
-              </td>
-              <td className="py-3 text-sm">
-                <div className="flex items-center space-x-2">
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => onEdit(record)}
-                    data-testid={`button-edit-production-${record.id}`}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onDelete(record)}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    data-testid={`button-delete-production-${record.id}`}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <ResponsiveDataTable
+      data={production}
+      columns={columns}
+      actions={actions}
+      emptyMessage="No production records found. Add your first production record to track manufacturing output."
+      testId="production-table"
+      getRowTestId={(record) => `production-row-${record.id}`}
+    />
   );
 }

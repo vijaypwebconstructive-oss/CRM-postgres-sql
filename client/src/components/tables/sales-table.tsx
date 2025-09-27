@@ -8,6 +8,7 @@ import { Eye, Package, Trash2, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import ResponsiveDataTable from "@/components/ui/responsive-data-table";
 import type { SalesOrderWithParty } from "@shared/schema";
 
 interface SalesTableProps {
@@ -80,95 +81,207 @@ export default function SalesTable({ salesOrders, onFulfill, isFulfilling, onDel
     setSelectedOrderId(null);
   };
 
-  if (salesOrders.length === 0) {
+  const columns = [
+    {
+      key: 'orderNumber' as keyof SalesOrderWithParty,
+      label: 'Order Number',
+      className: 'font-medium',
+    },
+    {
+      key: 'party' as keyof SalesOrderWithParty,
+      label: 'Party',
+      render: (value: any) => value.name,
+    },
+    {
+      key: 'date' as keyof SalesOrderWithParty,
+      label: 'Date',
+      render: (value: string) => format(new Date(value), "MMM dd, yyyy"),
+    },
+    {
+      key: 'itemCount' as keyof SalesOrderWithParty,
+      label: 'Items',
+      render: (value: number) => `${value} items`,
+    },
+    {
+      key: 'status' as keyof SalesOrderWithParty,
+      label: 'Status',
+      render: (value: string) => (
+        <Badge className={getStatusColor(value)}>
+          {value.replace('_', ' ')}
+        </Badge>
+      ),
+    },
+  ];
+
+  const getActions = (order: SalesOrderWithParty) => {
+    const actions = [
+      {
+        label: 'View',
+        icon: <Eye className="w-4 h-4" />,
+        onClick: () => openDetailModal(order.id),
+        variant: 'ghost' as const,
+        disabled: false,
+        testId: () => `button-view-order-${order.id}`,
+      },
+    ];
+
+    // Add fulfill button for pending and partial orders
+    if (order.status === "pending" || order.status === "partial_invoice") {
+      actions.push({
+        label: 'Fulfill',
+        icon: <Package className="w-4 h-4" />,
+        onClick: () => openFulfillModal(order.id),
+        variant: 'ghost' as const,
+        disabled: isFulfilling,
+        testId: () => `button-fulfill-order-${order.id}`,
+      });
+    }
+
+    // Add cancel button for non-cancelled orders
+    if (order.status !== "cancelled") {
+      actions.push({
+        label: 'Cancel',
+        icon: <XCircle className="w-4 h-4" />,
+        onClick: () => onCancel(order.id),
+        variant: 'ghost' as const,
+        disabled: isCancelling || false,
+        testId: () => `button-cancel-order-${order.id}`,
+      });
+    }
+
+    // Add delete button
+    actions.push({
+      label: 'Delete',
+      icon: <Trash2 className="w-4 h-4" />,
+      onClick: () => onDelete(order.id),
+      variant: 'ghost' as const,
+      disabled: isDeleting || false,
+      testId: () => `button-delete-order-${order.id}`,
+    });
+
+    return actions;
+  };
+
+  // Create a custom ResponsiveDataTable component that handles dynamic actions
+  const SalesDataTable = () => {
+    if (salesOrders.length === 0) {
+      return (
+        <div className="text-center py-8 text-muted-foreground" data-testid="no-sales-orders">
+          No sales orders found. Create your first sales order to start tracking orders.
+        </div>
+      );
+    }
+
     return (
-      <div className="text-center py-8 text-muted-foreground" data-testid="no-sales-orders">
-        No sales orders found. Create your first sales order to start tracking orders.
-      </div>
+      <>
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full data-table" data-testid="sales-table">
+            <thead>
+              <tr className="border-b border-border">
+                {columns.map((column) => (
+                  <th 
+                    key={String(column.key)} 
+                    className={`text-left py-3 text-sm font-medium text-muted-foreground ${column.className || ''}`}
+                  >
+                    {column.label}
+                  </th>
+                ))}
+                <th className="text-left py-3 text-sm font-medium text-muted-foreground">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {salesOrders.map((order) => (
+                <tr 
+                  key={order.id} 
+                  className="border-b border-border hover:bg-muted" 
+                  data-testid={`sales-order-row-${order.id}`}
+                >
+                  {columns.map((column) => (
+                    <td 
+                      key={String(column.key)} 
+                      className={`py-3 text-sm ${column.className || ''}`}
+                      data-testid={`sales-table-${String(column.key)}-${order.id}`}
+                    >
+                      {column.render 
+                        ? column.render((order as any)[column.key])
+                        : String((order as any)[column.key] || '')
+                      }
+                    </td>
+                  ))}
+                  <td className="py-3 text-sm">
+                    <div className="flex items-center space-x-2">
+                      {getActions(order).map((action, actionIndex) => (
+                        <Button
+                          key={actionIndex}
+                          variant={action.variant || "ghost"}
+                          size="sm"
+                          onClick={action.onClick}
+                          disabled={action.disabled}
+                          data-testid={action.testId()}
+                        >
+                          {action.icon}
+                        </Button>
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="md:hidden space-y-4">
+          {salesOrders.map((order) => (
+            <div 
+              key={order.id} 
+              className="shadow-sm border border-border rounded-lg p-4"
+              data-testid={`sales-order-card-${order.id}`}
+            >
+              <div className="space-y-3">
+                {columns.map((column) => (
+                  <div key={String(column.key)} className="flex justify-between items-start">
+                    <span className="text-sm font-medium text-muted-foreground min-w-0 flex-1">
+                      {column.label}
+                    </span>
+                    <span 
+                      className="text-sm font-medium text-right ml-2"
+                      data-testid={`sales-table-${String(column.key)}-${order.id}`}
+                    >
+                      {column.render 
+                        ? column.render((order as any)[column.key])
+                        : String((order as any)[column.key] || '')
+                      }
+                    </span>
+                  </div>
+                ))}
+                
+                <div className="flex justify-end space-x-2 pt-2 border-t border-border">
+                  {getActions(order).map((action, actionIndex) => (
+                    <Button
+                      key={actionIndex}
+                      variant={action.variant || "ghost"}
+                      size="sm"
+                      onClick={action.onClick}
+                      disabled={action.disabled}
+                      data-testid={action.testId()}
+                    >
+                      {action.icon}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </>
     );
-  }
+  };
 
   return (
     <>
-      <div className="overflow-x-auto">
-        <table className="w-full data-table" data-testid="sales-table">
-          <thead>
-            <tr className="border-b border-border">
-              <th className="text-left py-3 text-sm font-medium text-muted-foreground">Order Number</th>
-              <th className="text-left py-3 text-sm font-medium text-muted-foreground">Party</th>
-              <th className="text-left py-3 text-sm font-medium text-muted-foreground">Date</th>
-              <th className="text-left py-3 text-sm font-medium text-muted-foreground">Items</th>
-              <th className="text-left py-3 text-sm font-medium text-muted-foreground">Status</th>
-              <th className="text-left py-3 text-sm font-medium text-muted-foreground">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {salesOrders.map((order) => (
-              <tr key={order.id} className="border-b border-border hover:bg-muted" data-testid={`sales-order-row-${order.id}`}>
-                <td className="py-3 text-sm font-medium" data-testid={`order-number-${order.id}`}>
-                  {order.orderNumber}
-                </td>
-                <td className="py-3 text-sm" data-testid={`order-party-${order.id}`}>
-                  {order.party.name}
-                </td>
-                <td className="py-3 text-sm" data-testid={`order-date-${order.id}`}>
-                  {format(new Date(order.date), "MMM dd, yyyy")}
-                </td>
-                <td className="py-3 text-sm" data-testid={`order-items-${order.id}`}>
-                  {order.itemCount} items
-                </td>
-                <td className="py-3 text-sm" data-testid={`order-status-${order.id}`}>
-                  <Badge className={getStatusColor(order.status)}>
-                    {order.status.replace('_', ' ')}
-                  </Badge>
-                </td>
-                <td className="py-3 text-sm">
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openDetailModal(order.id)}
-                      data-testid={`button-view-order-${order.id}`}
-                    >
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                    {order.status === "pending" || order.status === "partial_invoice" ? (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openFulfillModal(order.id)}
-                        data-testid={`button-fulfill-order-${order.id}`}
-                      >
-                        <Package className="w-4 h-4" />
-                      </Button>
-                    ) : null}
-                    {order.status !== "cancelled" ? (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onCancel(order.id)}
-                        className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
-                        data-testid={`button-cancel-order-${order.id}`}
-                      >
-                        <XCircle className="w-4 h-4" />
-                      </Button>
-                    ) : null}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onDelete(order.id)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      data-testid={`button-delete-order-${order.id}`}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <SalesDataTable />
 
       {/* Order Details Modal */}
       <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
