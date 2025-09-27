@@ -21,10 +21,11 @@ interface Action<T> {
 interface ResponsiveDataTableProps<T> {
   data: T[];
   columns: Column<T>[];
-  actions?: Action<T>[];
+  actions?: Action<T>[] | ((item: T) => Action<T>[]);
   emptyMessage?: string;
   testId?: string;
   getRowTestId?: (item: T) => string;
+  getCardTestId?: (item: T) => string;
 }
 
 export default function ResponsiveDataTable<T extends { id: number | string }>({
@@ -33,8 +34,16 @@ export default function ResponsiveDataTable<T extends { id: number | string }>({
   actions = [],
   emptyMessage = "No data found.",
   testId = "data-table",
-  getRowTestId
+  getRowTestId,
+  getCardTestId
 }: ResponsiveDataTableProps<T>) {
+  
+  const getActionsForItem = (item: T): Action<T>[] => {
+    if (typeof actions === 'function') {
+      return actions(item);
+    }
+    return actions;
+  };
   if (data.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground" data-testid={`no-${testId}`}>
@@ -58,7 +67,7 @@ export default function ResponsiveDataTable<T extends { id: number | string }>({
                   {column.label}
                 </th>
               ))}
-              {actions.length > 0 && (
+              {(Array.isArray(actions) ? actions.length > 0 : data.some(item => getActionsForItem(item).length > 0)) && (
                 <th className="text-left py-3 text-sm font-medium text-muted-foreground">Actions</th>
               )}
             </tr>
@@ -68,31 +77,31 @@ export default function ResponsiveDataTable<T extends { id: number | string }>({
               <tr 
                 key={String(item.id)} 
                 className="border-b border-border hover:bg-muted" 
-                data-testid={getRowTestId ? getRowTestId(item) : `${testId}-row-${item.id}`}
+                data-testid={getRowTestId ? getRowTestId(item) : `${testId}-table-row-${item.id}`}
               >
                 {columns.map((column) => (
                   <td 
                     key={String(column.key)} 
                     className={`py-3 text-sm ${column.className || ''}`}
-                    data-testid={`${testId}-${String(column.key)}-${item.id}`}
+                    data-testid={`${testId}-table-${String(column.key)}-${item.id}`}
                   >
                     {column.render 
                       ? column.render(item[column.key], item)
-                      : String(item[column.key] || '')
+                      : String(item[column.key] ?? '')
                     }
                   </td>
                 ))}
-                {actions.length > 0 && (
+                {getActionsForItem(item).length > 0 && (
                   <td className="py-3 text-sm">
                     <div className="flex items-center space-x-2">
-                      {actions.map((action, actionIndex) => (
+                      {getActionsForItem(item).map((action, actionIndex) => (
                         <Button
                           key={actionIndex}
                           variant={action.variant || "ghost"}
                           size="sm"
                           onClick={() => action.onClick(item)}
                           disabled={action.disabled}
-                          data-testid={action.testId ? action.testId(item) : `${testId}-action-${actionIndex}-${item.id}`}
+                          data-testid={action.testId ? action.testId(item) : `${testId}-table-action-${actionIndex}-${item.id}`}
                         >
                           {action.icon}
                         </Button>
@@ -112,7 +121,7 @@ export default function ResponsiveDataTable<T extends { id: number | string }>({
           <Card 
             key={String(item.id)} 
             className="shadow-sm"
-            data-testid={getRowTestId ? getRowTestId(item) : `${testId}-card-${item.id}`}
+            data-testid={getCardTestId ? getCardTestId(item) : getRowTestId ? `${getRowTestId(item)}-card` : `${testId}-card-${item.id}`}
           >
             <CardContent className="p-4">
               <div className="space-y-3">
@@ -123,26 +132,26 @@ export default function ResponsiveDataTable<T extends { id: number | string }>({
                     </span>
                     <span 
                       className="text-sm font-medium text-right ml-2"
-                      data-testid={`${testId}-${String(column.key)}-${item.id}`}
+                      data-testid={`${testId}-card-${String(column.key)}-${item.id}`}
                     >
                       {column.render 
                         ? column.render(item[column.key], item)
-                        : String(item[column.key] || '')
+                        : String(item[column.key] ?? '')
                       }
                     </span>
                   </div>
                 ))}
                 
-                {actions.length > 0 && (
+                {getActionsForItem(item).length > 0 && (
                   <div className="flex justify-end space-x-2 pt-2 border-t border-border">
-                    {actions.map((action, actionIndex) => (
+                    {getActionsForItem(item).map((action, actionIndex) => (
                       <Button
                         key={actionIndex}
                         variant={action.variant || "ghost"}
                         size="sm"
                         onClick={() => action.onClick(item)}
                         disabled={action.disabled}
-                        data-testid={action.testId ? action.testId(item) : `${testId}-action-${actionIndex}-${item.id}`}
+                        data-testid={action.testId ? action.testId(item) : `${testId}-card-action-${actionIndex}-${item.id}`}
                       >
                         {action.icon}
                       </Button>
