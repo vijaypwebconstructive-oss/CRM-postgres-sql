@@ -86,7 +86,7 @@ export default function Reports() {
       <Card>
         <CardHeader>
           <CardTitle data-testid="reports-title">Production Reports</CardTitle>
-          <p className="text-muted-foreground" data-testid="reports-description">
+          <p className="text-muted-foreground text-sm mt-1 hidden sm:block" data-testid="reports-description">
             Analyze production performance and material consumption
           </p>
         </CardHeader>

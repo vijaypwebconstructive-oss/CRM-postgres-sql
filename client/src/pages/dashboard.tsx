@@ -51,9 +51,9 @@ export default function Dashboard() {
         {/* Recent Production Records */}
         <Card className="lg:col-span-2" data-testid="recent-production-card">
           <CardHeader className="border-b border-border">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle>Recent Production Records</CardTitle>
-              <Button data-testid="button-add-production">Add Record</Button>
+              <Button data-testid="button-add-production" className="flex-shrink-0">Add Record</Button>
             </div>
           </CardHeader>
           <CardContent className="p-6">
@@ -149,9 +149,9 @@ export default function Dashboard() {
         {/* Pending Sales Orders */}
         <Card data-testid="pending-orders-card">
           <CardHeader className="border-b border-border">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle>Pending Sales Orders</CardTitle>
-              <Button data-testid="button-new-order">New Order</Button>
+              <Button data-testid="button-new-order" className="flex-shrink-0">New Order</Button>
             </div>
           </CardHeader>
           <CardContent className="p-6">
@@ -196,9 +196,9 @@ export default function Dashboard() {
         {/* Production Planning */}
         <Card data-testid="production-planning-card">
           <CardHeader className="border-b border-border">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle>Production Planning</CardTitle>
-              <Button data-testid="button-plan-production">Plan Production</Button>
+              <Button data-testid="button-plan-production" className="flex-shrink-0">Plan Production</Button>
             </div>
           </CardHeader>
           <CardContent className="p-6">

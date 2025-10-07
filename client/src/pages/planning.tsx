@@ -78,7 +78,7 @@ export default function Planning() {
       <Card>
         <CardHeader>
           <CardTitle data-testid="planning-title">Production Planning</CardTitle>
-          <p className="text-muted-foreground" data-testid="planning-description">
+          <p className="text-muted-foreground text-sm mt-1 hidden sm:block" data-testid="planning-description">
             Plan production runs and calculate raw material requirements
           </p>
         </CardHeader>
