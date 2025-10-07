@@ -95,7 +95,7 @@ export default function Dashboard() {
           <CardHeader className="border-b border-border">
             <CardTitle>Inventory Alerts</CardTitle>
           </CardHeader>
-          <CardContent className="p-6 space-y-4">
+          <CardContent className="p-6 space-y-4 max-h-96 overflow-y-auto">
             {lowStockItems.length === 0 ? (
               <div className="text-center text-muted-foreground py-4" data-testid="no-inventory-alerts">
                 All products have sufficient stock levels.
