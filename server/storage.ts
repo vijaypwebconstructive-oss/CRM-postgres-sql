@@ -10,7 +10,7 @@ import {
   type User, type UpsertUser
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, sql, and } from "drizzle-orm";
+import { eq, desc, sql, and, like } from "drizzle-orm";
 
 export interface IStorage {
   // User operations - Required for Replit Auth integration
@@ -459,7 +459,7 @@ export class DatabaseStorage implements IStorage {
       .from(production)
       .where(eq(production.date, today));
     
-    const todayProduction = todayProductionResult[0]?.total || 0;
+    const todayProduction = Number(todayProductionResult[0]?.total || 0);
 
     // Yesterday's production
     const yesterdayProductionResult = await db
@@ -467,7 +467,7 @@ export class DatabaseStorage implements IStorage {
       .from(production)
       .where(eq(production.date, yesterday));
     
-    const yesterdayProduction = yesterdayProductionResult[0]?.total || 0;
+    const yesterdayProduction = Number(yesterdayProductionResult[0]?.total || 0);
 
     // Pending orders
     const pendingOrdersResult = await db
@@ -475,7 +475,7 @@ export class DatabaseStorage implements IStorage {
       .from(salesOrders)
       .where(eq(salesOrders.status, "pending"));
     
-    const pendingOrders = pendingOrdersResult[0]?.count || 0;
+    const pendingOrders = Number(pendingOrdersResult[0]?.count || 0);
 
     // Urgent orders (pending orders from more than 7 days ago)
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -489,7 +489,7 @@ export class DatabaseStorage implements IStorage {
         )
       );
     
-    const urgentOrders = urgentOrdersResult[0]?.count || 0;
+    const urgentOrders = Number(urgentOrdersResult[0]?.count || 0);
 
     // Low stock items (less than 50 pieces)
     const inventory = await this.getInventory();
@@ -503,7 +503,7 @@ export class DatabaseStorage implements IStorage {
       })
       .from(production)
       .innerJoin(products, eq(production.productId, products.id))
-      .where(sql`DATE_TRUNC('month', ${production.date}) = DATE_TRUNC('month', CURRENT_DATE)`);
+      .where(like(production.date, `${thisMonth}%`));
     
     const monthlyExpense = monthlyProductionResult.reduce((total, record) => {
       const cost = parseFloat(record.quantityKg) * parseFloat(record.rawMaterialPricePerKg);

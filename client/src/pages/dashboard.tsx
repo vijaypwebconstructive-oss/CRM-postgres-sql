@@ -7,7 +7,7 @@ import { api } from "@/lib/api";
 import { format } from "date-fns";
 
 export default function Dashboard() {
-  const { data: metrics } = useQuery({
+  const { data: metrics, isLoading, error } = useQuery({
     queryKey: ["/api/dashboard/metrics"],
     queryFn: api.getDashboardMetrics,
   });
@@ -31,8 +31,16 @@ export default function Dashboard() {
   const pendingOrders = salesOrders?.filter((order: any) => order.status === "pending") || [];
   const recentProductionRecords = recentProduction?.slice(0, 3) || [];
 
-  if (!metrics) {
+  if (isLoading) {
     return <div data-testid="loading-dashboard">Loading dashboard...</div>;
+  }
+
+  if (error || !metrics) {
+    return (
+      <div className="p-8 text-center" data-testid="error-dashboard">
+        <p className="text-destructive">Failed to load dashboard metrics. Please try again.</p>
+      </div>
+    );
   }
 
   return (
