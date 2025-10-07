@@ -81,16 +81,16 @@ export default function Inventory() {
     <div data-testid="inventory-page">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
               <CardTitle data-testid="inventory-title">Inventory Control</CardTitle>
-              <p className="text-muted-foreground" data-testid="inventory-description">
+              <p className="text-muted-foreground text-sm mt-1 hidden sm:block" data-testid="inventory-description">
                 Real-time view of stock levels with production and sales tracking
               </p>
             </div>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button data-testid="button-stock-adjustment">
+                <Button data-testid="button-stock-adjustment" className="flex-shrink-0">
                   <Plus className="w-4 h-4 mr-2" />
                   Stock Adjustment
                 </Button>

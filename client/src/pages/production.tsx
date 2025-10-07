@@ -128,16 +128,16 @@ export default function Production() {
     <div data-testid="production-page">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
               <CardTitle data-testid="production-title">Production Records</CardTitle>
-              <p className="text-muted-foreground" data-testid="production-description">
+              <p className="text-muted-foreground text-sm mt-1 hidden sm:block" data-testid="production-description">
                 Log daily manufacturing output and track production efficiency
               </p>
             </div>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button data-testid="button-add-production">
+                <Button data-testid="button-add-production" className="flex-shrink-0">
                   <Plus className="w-4 h-4 mr-2" />
                   Add Record
                 </Button>

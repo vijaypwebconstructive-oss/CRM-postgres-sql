@@ -142,16 +142,16 @@ export default function Sales() {
     <div data-testid="sales-page">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
               <CardTitle data-testid="sales-title">Sales Orders</CardTitle>
-              <p className="text-muted-foreground" data-testid="sales-description">
+              <p className="text-muted-foreground text-sm mt-1 hidden sm:block" data-testid="sales-description">
                 Create and manage sales orders with order tracking and fulfillment
               </p>
             </div>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button data-testid="button-create-order">
+                <Button data-testid="button-create-order" className="flex-shrink-0">
                   <Plus className="w-4 h-4 mr-2" />
                   Create Order
                 </Button>
