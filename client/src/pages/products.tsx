@@ -79,17 +79,17 @@ export default function Products() {
     <div data-testid="products-page">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
               <CardTitle data-testid="products-title">Product Master</CardTitle>
-              <p className="text-muted-foreground" data-testid="products-description">
+              <p className="text-muted-foreground text-sm mt-1 hidden sm:block" data-testid="products-description">
                 Manage your product catalog with weight, material, and cost information
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-shrink-0">
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button data-testid="button-add-product">
+                  <Button data-testid="button-add-product" className="flex-1 sm:flex-none">
                     <Plus className="w-4 h-4 mr-2" />
                     Add Product
                   </Button>
@@ -107,7 +107,7 @@ export default function Products() {
 
               <Dialog open={isBulkUploadOpen} onOpenChange={setIsBulkUploadOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" data-testid="button-bulk-upload-products">
+                  <Button variant="outline" data-testid="button-bulk-upload-products" className="flex-1 sm:flex-none">
                     <Upload className="w-4 h-4 mr-2" />
                     Bulk Upload
                   </Button>
