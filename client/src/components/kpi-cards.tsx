@@ -1,22 +1,40 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Hammer, ShoppingCart, AlertTriangle, TrendingUp } from "lucide-react";
+import { Hammer, ShoppingCart, AlertTriangle, DollarSign } from "lucide-react";
 
 interface KPICardsProps {
   metrics: {
     todayProduction: number;
+    yesterdayProduction: number;
     pendingOrders: number;
+    urgentOrders: number;
     lowStockItems: number;
-    monthlyRevenue: number;
+    monthlyExpense: number;
   };
 }
 
 export default function KPICards({ metrics }: KPICardsProps) {
+  // Calculate production change percentage
+  const productionChange = metrics.yesterdayProduction > 0
+    ? ((metrics.todayProduction - metrics.yesterdayProduction) / metrics.yesterdayProduction * 100).toFixed(1)
+    : null;
+  
+  const productionChangeText = productionChange 
+    ? `${parseFloat(productionChange) >= 0 ? '+' : ''}${productionChange}% from yesterday`
+    : metrics.yesterdayProduction === 0 ? 'No data from yesterday' : '';
+  
+  const productionChangeType = productionChange && parseFloat(productionChange) >= 0 ? "positive" : "negative";
+
+  // Urgent orders text
+  const urgentOrdersText = metrics.urgentOrders > 0
+    ? `${metrics.urgentOrders} urgent ${metrics.urgentOrders === 1 ? 'order' : 'orders'}`
+    : 'All orders up to date';
+
   const kpiData = [
     {
       title: "Today's Production",
       value: metrics.todayProduction.toLocaleString(),
-      change: "+12% from yesterday",
-      changeType: "positive",
+      change: productionChangeText,
+      changeType: productionChangeType,
       icon: Hammer,
       iconBg: "bg-blue-100",
       iconColor: "text-blue-600",
@@ -25,8 +43,8 @@ export default function KPICards({ metrics }: KPICardsProps) {
     {
       title: "Pending Orders",
       value: metrics.pendingOrders.toString(),
-      change: "5 urgent orders",
-      changeType: "warning",
+      change: urgentOrdersText,
+      changeType: metrics.urgentOrders > 0 ? "warning" : "positive",
       icon: ShoppingCart,
       iconBg: "bg-amber-100",
       iconColor: "text-amber-600",
@@ -35,22 +53,22 @@ export default function KPICards({ metrics }: KPICardsProps) {
     {
       title: "Low Stock Items",
       value: metrics.lowStockItems.toString(),
-      change: "Requires attention",
-      changeType: "negative",
+      change: metrics.lowStockItems > 0 ? "Requires attention" : "Stock levels good",
+      changeType: metrics.lowStockItems > 0 ? "negative" : "positive",
       icon: AlertTriangle,
       iconBg: "bg-red-100",
       iconColor: "text-destructive",
       testId: "kpi-stock"
     },
     {
-      title: "Revenue (Month)",
-      value: `₹${(metrics.monthlyRevenue / 100000).toFixed(1)}L`,
-      change: "+8% vs last month",
-      changeType: "positive",
-      icon: TrendingUp,
-      iconBg: "bg-green-100",
-      iconColor: "text-green-600",
-      testId: "kpi-revenue"
+      title: "Expense (Month)",
+      value: `₹${(metrics.monthlyExpense / 100000).toFixed(1)}L`,
+      change: "Material costs",
+      changeType: "neutral",
+      icon: DollarSign,
+      iconBg: "bg-purple-100",
+      iconColor: "text-purple-600",
+      testId: "kpi-expense"
     }
   ];
 
@@ -75,11 +93,13 @@ export default function KPICards({ metrics }: KPICardsProps) {
                         ? "text-green-600" 
                         : kpi.changeType === "warning"
                         ? "text-amber-600"
+                        : kpi.changeType === "neutral"
+                        ? "text-muted-foreground"
                         : "text-destructive"
                     }`}
                     data-testid={`${kpi.testId}-change`}
                   >
-                    {kpi.changeType === "positive" ? "↗ " : kpi.changeType === "warning" ? "→ " : "→ "}
+                    {kpi.changeType === "positive" ? "↗ " : kpi.changeType === "warning" ? "→ " : kpi.changeType === "neutral" ? "→ " : "↘ "}
                     {kpi.change}
                   </p>
                 </div>

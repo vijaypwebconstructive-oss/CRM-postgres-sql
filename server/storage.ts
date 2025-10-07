@@ -57,9 +57,11 @@ export interface IStorage {
   // Dashboard
   getDashboardMetrics(): Promise<{
     todayProduction: number;
+    yesterdayProduction: number;
     pendingOrders: number;
+    urgentOrders: number;
     lowStockItems: number;
-    monthlyRevenue: number;
+    monthlyExpense: number;
   }>;
 }
 
@@ -441,11 +443,14 @@ export class DatabaseStorage implements IStorage {
 
   async getDashboardMetrics(): Promise<{
     todayProduction: number;
+    yesterdayProduction: number;
     pendingOrders: number;
+    urgentOrders: number;
     lowStockItems: number;
-    monthlyRevenue: number;
+    monthlyExpense: number;
   }> {
     const today = new Date().toISOString().split('T')[0];
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const thisMonth = new Date().toISOString().slice(0, 7);
 
     // Today's production
@@ -456,6 +461,14 @@ export class DatabaseStorage implements IStorage {
     
     const todayProduction = todayProductionResult[0]?.total || 0;
 
+    // Yesterday's production
+    const yesterdayProductionResult = await db
+      .select({ total: sql<number>`COALESCE(SUM(${production.pieces}), 0)` })
+      .from(production)
+      .where(eq(production.date, yesterday));
+    
+    const yesterdayProduction = yesterdayProductionResult[0]?.total || 0;
+
     // Pending orders
     const pendingOrdersResult = await db
       .select({ count: sql<number>`COUNT(*)` })
@@ -464,18 +477,46 @@ export class DatabaseStorage implements IStorage {
     
     const pendingOrders = pendingOrdersResult[0]?.count || 0;
 
+    // Urgent orders (pending orders from more than 7 days ago)
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const urgentOrdersResult = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(salesOrders)
+      .where(
+        and(
+          eq(salesOrders.status, "pending"),
+          sql`${salesOrders.date} <= ${sevenDaysAgo}`
+        )
+      );
+    
+    const urgentOrders = urgentOrdersResult[0]?.count || 0;
+
     // Low stock items (less than 50 pieces)
     const inventory = await this.getInventory();
     const lowStockItems = inventory.filter(item => item.currentStock < 50).length;
 
-    // Monthly revenue (simplified calculation)
-    const monthlyRevenue = 24000; // Placeholder - would need pricing data
+    // Monthly expenses (material costs from production)
+    const monthlyProductionResult = await db
+      .select({
+        quantityKg: production.quantityKg,
+        rawMaterialPricePerKg: products.rawMaterialPricePerKg
+      })
+      .from(production)
+      .innerJoin(products, eq(production.productId, products.id))
+      .where(sql`DATE_TRUNC('month', ${production.date}) = DATE_TRUNC('month', CURRENT_DATE)`);
+    
+    const monthlyExpense = monthlyProductionResult.reduce((total, record) => {
+      const cost = parseFloat(record.quantityKg) * parseFloat(record.rawMaterialPricePerKg);
+      return total + cost;
+    }, 0);
 
     return {
       todayProduction,
+      yesterdayProduction,
       pendingOrders,
+      urgentOrders,
       lowStockItems,
-      monthlyRevenue
+      monthlyExpense
     };
   }
 }
