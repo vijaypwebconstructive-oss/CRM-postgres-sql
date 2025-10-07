@@ -13,15 +13,14 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex bg-background">
       <AppSidebar 
         isOpen={sidebarOpen} 
         onClose={() => setSidebarOpen(false)} 
       />
       
-      <div className="flex flex-1 lg:ml-64">
-        <main className="flex-1 flex flex-col">
-          <header className="bg-card border-b border-border px-4 sm:px-6 py-4" data-testid="header">
+      <main className="flex-1 flex flex-col">
+        <header className="bg-card border-b border-border px-4 sm:px-6 py-4" data-testid="header">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 {/* Mobile Menu Button */}
@@ -81,11 +80,10 @@ export default function MainLayout({ children }: MainLayoutProps) {
             </div>
           </header>
 
-          <div className="flex-1 p-4 sm:p-6 overflow-auto" data-testid="main-content">
-            {children}
-          </div>
-        </main>
-      </div>
+        <div className="flex-1 p-4 sm:p-6 overflow-auto" data-testid="main-content">
+          {children}
+        </div>
+      </main>
     </div>
   );
 }
