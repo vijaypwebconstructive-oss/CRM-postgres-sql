@@ -147,13 +147,13 @@ export default function Dashboard() {
             </div>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="space-y-4">
+            <div className="space-y-4 max-h-96 overflow-y-auto">
               {pendingOrders.length === 0 ? (
                 <div className="text-center text-muted-foreground py-4" data-testid="no-pending-orders">
                   No pending orders. All orders are up to date.
                 </div>
               ) : (
-                pendingOrders.slice(0, 3).map((order: any) => (
+                pendingOrders.map((order: any) => (
                   <div 
                     key={order.id} 
                     className="flex items-center justify-between p-4 border border-border rounded-lg"

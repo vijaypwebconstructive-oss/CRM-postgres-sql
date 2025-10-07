@@ -129,7 +129,7 @@ export default function Planning() {
                 No items in the production plan. Add products above to get started.
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-96 overflow-y-auto">
                 {planItems.map((item, index) => (
                   <div
                     key={index}

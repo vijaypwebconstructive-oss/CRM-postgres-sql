@@ -158,7 +158,7 @@ export default function Reports() {
           {/* Product Performance Table */}
           <div className="mb-8">
             <h3 className="text-lg font-semibold mb-4">Product Performance</h3>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto max-h-96 overflow-y-auto">
               <table className="w-full border border-border rounded-lg" data-testid="table-product-performance">
                 <thead className="bg-muted">
                   <tr>
