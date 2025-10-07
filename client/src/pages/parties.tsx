@@ -123,17 +123,17 @@ export default function Parties() {
     <div data-testid="parties-page">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
               <CardTitle data-testid="parties-title">Party Master</CardTitle>
-              <p className="text-muted-foreground" data-testid="parties-description">
+              <p className="text-muted-foreground text-sm mt-1 hidden sm:block" data-testid="parties-description">
                 Manage your customers and suppliers directory
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-shrink-0">
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button data-testid="button-add-party">
+                  <Button data-testid="button-add-party" className="flex-1 sm:flex-none">
                     <Plus className="w-4 h-4 mr-2" />
                     Add Party
                   </Button>
@@ -151,7 +151,7 @@ export default function Parties() {
 
               <Dialog open={isBulkUploadOpen} onOpenChange={setIsBulkUploadOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" data-testid="button-bulk-upload-parties">
+                  <Button variant="outline" data-testid="button-bulk-upload-parties" className="flex-1 sm:flex-none">
                     <Upload className="w-4 h-4 mr-2" />
                     Bulk Upload
                   </Button>
