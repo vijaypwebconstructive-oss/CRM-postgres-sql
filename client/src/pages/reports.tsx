@@ -85,10 +85,14 @@ export default function Reports() {
     <div className="space-y-6" data-testid="reports-page">
       <Card>
         <CardHeader>
-          <CardTitle data-testid="reports-title">Production Reports</CardTitle>
-          <p className="text-muted-foreground text-sm mt-1 hidden sm:block" data-testid="reports-description">
-            Analyze production performance and material consumption
-          </p>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <CardTitle data-testid="reports-title">Production Reports</CardTitle>
+              <p className="text-muted-foreground text-sm mt-1 hidden sm:block" data-testid="reports-description">
+                Analyze production performance and material consumption
+              </p>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {/* Date Range Selection */}

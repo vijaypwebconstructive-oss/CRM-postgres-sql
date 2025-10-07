@@ -77,10 +77,14 @@ export default function Planning() {
     <div className="space-y-6" data-testid="planning-page">
       <Card>
         <CardHeader>
-          <CardTitle data-testid="planning-title">Production Planning</CardTitle>
-          <p className="text-muted-foreground text-sm mt-1 hidden sm:block" data-testid="planning-description">
-            Plan production runs and calculate raw material requirements
-          </p>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <CardTitle data-testid="planning-title">Production Planning</CardTitle>
+              <p className="text-muted-foreground text-sm mt-1 hidden sm:block" data-testid="planning-description">
+                Plan production runs and calculate raw material requirements
+              </p>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Add Items to Plan */}
