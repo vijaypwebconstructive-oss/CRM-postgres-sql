@@ -17,3 +17,7 @@ build/
 
 # Server uploads (if dynamic)
 server/public/uploads
+
+# Replit / local editor junk
+.local/
+.replit
