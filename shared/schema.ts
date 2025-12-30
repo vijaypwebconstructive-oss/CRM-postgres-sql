@@ -1,5 +1,15 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, decimal, integer, timestamp, serial, index, jsonb } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  varchar,
+  decimal,
+  integer,
+  timestamp,
+  serial,
+  index,
+  jsonb,
+} from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -9,7 +19,10 @@ export const products = pgTable("products", {
   name: text("name").notNull(),
   weightGrams: decimal("weight_grams", { precision: 10, scale: 2 }).notNull(),
   rawMaterialType: text("raw_material_type").notNull(),
-  rawMaterialPricePerKg: decimal("raw_material_price_per_kg", { precision: 10, scale: 2 }).notNull(),
+  rawMaterialPricePerKg: decimal("raw_material_price_per_kg", {
+    precision: 10,
+    scale: 2,
+  }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -26,7 +39,9 @@ export const parties = pgTable("parties", {
 export const production = pgTable("production", {
   id: serial("id").primaryKey(),
   date: text("date").notNull(), // ISO format string
-  productId: integer("product_id").notNull().references(() => products.id),
+  productId: integer("product_id")
+    .notNull()
+    .references(() => products.id),
   quantityKg: decimal("quantity_kg", { precision: 10, scale: 3 }).notNull(),
   pieces: integer("pieces").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -35,17 +50,27 @@ export const production = pgTable("production", {
 export const salesOrders = pgTable("sales_orders", {
   id: serial("id").primaryKey(),
   orderNumber: text("order_number").notNull().unique(),
-  partyId: integer("party_id").notNull().references(() => parties.id),
+  partyId: integer("party_id")
+    .notNull()
+    .references(() => parties.id),
   date: text("date").notNull(), // ISO format string
-  status: text("status", { enum: ["pending", "partial_invoice", "fully_invoiced", "cancelled"] }).notNull().default("pending"),
+  status: text("status", {
+    enum: ["pending", "partial_invoice", "fully_invoiced", "cancelled"],
+  })
+    .notNull()
+    .default("pending"),
   itemCount: integer("item_count").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const salesOrderItems = pgTable("sales_order_items", {
   id: serial("id").primaryKey(),
-  salesOrderId: integer("sales_order_id").notNull().references(() => salesOrders.id),
-  productId: integer("product_id").notNull().references(() => products.id),
+  salesOrderId: integer("sales_order_id")
+    .notNull()
+    .references(() => salesOrders.id),
+  productId: integer("product_id")
+    .notNull()
+    .references(() => products.id),
   quantity: integer("quantity").notNull(), // pieces ordered
   fulfilled: integer("fulfilled").notNull().default(0), // pieces shipped/invoiced
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -54,7 +79,9 @@ export const salesOrderItems = pgTable("sales_order_items", {
 export const stockAdjustments = pgTable("stock_adjustments", {
   id: serial("id").primaryKey(),
   date: text("date").notNull(), // ISO format string
-  productId: integer("product_id").notNull().references(() => products.id),
+  productId: integer("product_id")
+    .notNull()
+    .references(() => products.id),
   quantity: integer("quantity").notNull(), // can be positive or negative
   reason: text("reason").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -70,13 +97,15 @@ export const sessions = pgTable(
     sess: jsonb("sess").notNull(),
     expire: timestamp("expire").notNull(),
   },
-  (table) => [index("IDX_session_expire").on(table.expire)],
+  (table) => [index("IDX_session_expire").on(table.expire)]
 );
 
 // User storage table.
 // (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
 export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   email: varchar("email").unique(),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
@@ -111,23 +140,29 @@ export const salesOrdersRelations = relations(salesOrders, ({ one, many }) => ({
   items: many(salesOrderItems),
 }));
 
-export const salesOrderItemsRelations = relations(salesOrderItems, ({ one }) => ({
-  salesOrder: one(salesOrders, {
-    fields: [salesOrderItems.salesOrderId],
-    references: [salesOrders.id],
-  }),
-  product: one(products, {
-    fields: [salesOrderItems.productId],
-    references: [products.id],
-  }),
-}));
+export const salesOrderItemsRelations = relations(
+  salesOrderItems,
+  ({ one }) => ({
+    salesOrder: one(salesOrders, {
+      fields: [salesOrderItems.salesOrderId],
+      references: [salesOrders.id],
+    }),
+    product: one(products, {
+      fields: [salesOrderItems.productId],
+      references: [products.id],
+    }),
+  })
+);
 
-export const stockAdjustmentsRelations = relations(stockAdjustments, ({ one }) => ({
-  product: one(products, {
-    fields: [stockAdjustments.productId],
-    references: [products.id],
-  }),
-}));
+export const stockAdjustmentsRelations = relations(
+  stockAdjustments,
+  ({ one }) => ({
+    product: one(products, {
+      fields: [stockAdjustments.productId],
+      references: [products.id],
+    }),
+  })
+);
 
 // Insert schemas
 export const insertProductSchema = createInsertSchema(products).omit({
@@ -152,14 +187,18 @@ export const insertSalesOrderSchema = createInsertSchema(salesOrders).omit({
   createdAt: true,
 });
 
-export const insertSalesOrderItemSchema = createInsertSchema(salesOrderItems).omit({
+export const insertSalesOrderItemSchema = createInsertSchema(
+  salesOrderItems
+).omit({
   id: true,
   salesOrderId: true,
   fulfilled: true,
   createdAt: true,
 });
 
-export const insertStockAdjustmentSchema = createInsertSchema(stockAdjustments).omit({
+export const insertStockAdjustmentSchema = createInsertSchema(
+  stockAdjustments
+).omit({
   id: true,
   createdAt: true,
 });
@@ -189,15 +228,15 @@ export type UpsertUser = typeof users.$inferInsert;
 
 // Extended types for API responses
 export type ProductionWithProduct = Production & {
-  product: Product;
+  product: Product | null;
 };
 
 export type SalesOrderWithParty = SalesOrder & {
-  party: Party;
+  party: Party | null;
 };
 
 export type SalesOrderWithItems = SalesOrder & {
-  party: Party;
+  party: Party | null;
   items: (SalesOrderItem & { product: Product })[];
 };
 

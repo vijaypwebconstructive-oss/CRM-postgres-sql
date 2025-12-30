@@ -1,10 +1,16 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Building2, Lock, Shield, Users } from "lucide-react";
 
 export function LoginPage() {
   const handleLogin = () => {
-    window.location.href = '/api/login';
+    window.location.href = "/api/login";
   };
 
   return (
@@ -49,9 +55,9 @@ export function LoginPage() {
             </div>
 
             {/* Login Button */}
-            <Button 
+            <Button
               onClick={handleLogin}
-              className="w-full" 
+              className="w-full"
               size="lg"
               data-testid="button-login"
             >
@@ -59,8 +65,9 @@ export function LoginPage() {
             </Button>
 
             <p className="text-xs text-center text-gray-500 dark:text-gray-400">
-              By signing in, you'll have access to all ERP features including 
-              product management, production tracking, sales orders, and reporting.
+              By signing in, you'll have access to all ERP features including
+              product management, production tracking, sales orders, and
+              reporting.
             </p>
           </CardContent>
         </Card>

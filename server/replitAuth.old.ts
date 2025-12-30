@@ -10,9 +10,7 @@ import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 import crypto from "crypto";
 
-if (!process.env.REPLIT_DOMAINS) {
-  throw new Error("Environment variable REPLIT_DOMAINS not provided");
-}
+const IS_LOCAL_DEV = process.env.NODE_ENV === "development";
 
 const getOidcConfig = memoize(
   async () => {
@@ -41,7 +39,7 @@ export function getSession() {
     cookie: {
       httpOnly: true,
       secure: true,
-      sameSite: 'lax', // CSRF protection
+      sameSite: "lax", // CSRF protection
       maxAge: sessionTtl,
     },
   });
@@ -57,9 +55,7 @@ function updateUserSession(
   user.expires_at = user.claims?.exp;
 }
 
-async function upsertUser(
-  claims: any,
-) {
+async function upsertUser(claims: any) {
   await storage.upsertUser({
     id: claims["sub"],
     email: claims["email"],
@@ -70,6 +66,15 @@ async function upsertUser(
 }
 
 export async function setupAuth(app: Express) {
+  if (IS_LOCAL_DEV) {
+    console.log("🔓 Replit auth disabled (local development)");
+    return;
+  }
+
+  if (!process.env.REPLIT_DOMAINS) {
+    throw new Error("Environment variable REPLIT_DOMAINS not provided");
+  }
+
   app.set("trust proxy", 1);
   app.use(getSession());
   app.use(passport.initialize());
@@ -87,8 +92,7 @@ export async function setupAuth(app: Express) {
     verified(null, user);
   };
 
-  for (const domain of process.env
-    .REPLIT_DOMAINS!.split(",")) {
+  for (const domain of process.env.REPLIT_DOMAINS!.split(",")) {
     const strategy = new Strategy(
       {
         name: `replitauth:${domain}`,
@@ -96,7 +100,7 @@ export async function setupAuth(app: Express) {
         scope: "openid email profile offline_access",
         callbackURL: `https://${domain}/api/callback`,
       },
-      verify,
+      verify
     );
     passport.use(strategy);
   }
@@ -139,30 +143,33 @@ export async function setupAuth(app: Express) {
 
 // CSRF protection utilities
 function generateCSRFToken(): string {
-  return crypto.randomBytes(32).toString('hex');
+  return crypto.randomBytes(32).toString("hex");
 }
 
 // CSRF validation middleware for unsafe methods
 export const validateCSRF: RequestHandler = (req: any, res, next) => {
   const method = req.method.toUpperCase();
-  
+
   // Only validate CSRF for unsafe methods
-  if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+  if (["POST", "PUT", "DELETE", "PATCH"].includes(method)) {
     const sessionToken = req.session?.csrfToken;
-    const requestToken = req.headers['x-csrf-token'] || req.body._csrf;
-    
+    const requestToken = req.headers["x-csrf-token"] || req.body._csrf;
+
     if (!sessionToken || !requestToken || sessionToken !== requestToken) {
-      return res.status(403).json({ 
+      return res.status(403).json({
         message: "CSRF token validation failed",
-        code: "CSRF_TOKEN_INVALID" 
+        code: "CSRF_TOKEN_INVALID",
       });
     }
   }
-  
+
   next();
 };
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
+  if (process.env.NODE_ENV === "development") {
+    return next();
+  }
   const user = req.user as any;
 
   if (!req.isAuthenticated() || !user.expires_at) {

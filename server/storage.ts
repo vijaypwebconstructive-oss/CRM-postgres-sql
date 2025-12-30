@@ -1,13 +1,29 @@
-import { 
-  products, parties, production, salesOrders, salesOrderItems, stockAdjustments, users,
-  type Product, type InsertProduct,
-  type Party, type InsertParty,
-  type Production, type InsertProduction, type ProductionWithProduct,
-  type SalesOrder, type InsertSalesOrder, type SalesOrderWithParty, type SalesOrderWithItems,
-  type SalesOrderItem, type InsertSalesOrderItem,
-  type StockAdjustment, type InsertStockAdjustment,
+import {
+  products,
+  parties,
+  production,
+  salesOrders,
+  salesOrderItems,
+  stockAdjustments,
+  users,
+  type Product,
+  type InsertProduct,
+  type Party,
+  type InsertParty,
+  type Production,
+  type InsertProduction,
+  type ProductionWithProduct,
+  type SalesOrder,
+  type InsertSalesOrder,
+  type SalesOrderWithParty,
+  type SalesOrderWithItems,
+  type SalesOrderItem,
+  type InsertSalesOrderItem,
+  type StockAdjustment,
+  type InsertStockAdjustment,
   type InventoryItem,
-  type User, type UpsertUser
+  type User,
+  type UpsertUser,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, and, like } from "drizzle-orm";
@@ -35,21 +51,32 @@ export interface IStorage {
   getProduction(): Promise<ProductionWithProduct[]>;
   getProductionRecord(id: number): Promise<ProductionWithProduct | undefined>;
   createProductionRecord(production: InsertProduction): Promise<Production>;
-  updateProductionRecord(id: number, production: Partial<InsertProduction>): Promise<Production>;
+  updateProductionRecord(
+    id: number,
+    production: Partial<InsertProduction>
+  ): Promise<Production>;
   deleteProductionRecord(id: number): Promise<void>;
 
   // Sales Orders
   getSalesOrders(): Promise<SalesOrderWithParty[]>;
   getSalesOrder(id: number): Promise<SalesOrderWithItems | undefined>;
-  createSalesOrder(salesOrder: InsertSalesOrder, items: InsertSalesOrderItem[]): Promise<SalesOrder>;
+  createSalesOrder(
+    salesOrder: InsertSalesOrder,
+    items: InsertSalesOrderItem[]
+  ): Promise<SalesOrder>;
   updateSalesOrderStatus(id: number, status: string): Promise<SalesOrder>;
-  fulfillSalesOrderItems(orderId: number, fulfillments: { itemId: number; quantity: number }[]): Promise<void>;
+  fulfillSalesOrderItems(
+    orderId: number,
+    fulfillments: { itemId: number; quantity: number }[]
+  ): Promise<void>;
   deleteSalesOrder(id: number): Promise<void>;
   cancelInvoice(id: number): Promise<SalesOrder>;
 
   // Stock Adjustments
   getStockAdjustments(): Promise<StockAdjustment[]>;
-  createStockAdjustment(adjustment: InsertStockAdjustment): Promise<StockAdjustment>;
+  createStockAdjustment(
+    adjustment: InsertStockAdjustment
+  ): Promise<StockAdjustment>;
 
   // Inventory
   getInventory(): Promise<InventoryItem[]>;
@@ -92,7 +119,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProduct(id: number): Promise<Product | undefined> {
-    const [product] = await db.select().from(products).where(eq(products.id, id));
+    const [product] = await db
+      .select()
+      .from(products)
+      .where(eq(products.id, id));
     return product || undefined;
   }
 
@@ -101,7 +131,10 @@ export class DatabaseStorage implements IStorage {
     return newProduct;
   }
 
-  async updateProduct(id: number, product: Partial<InsertProduct>): Promise<Product> {
+  async updateProduct(
+    id: number,
+    product: Partial<InsertProduct>
+  ): Promise<Product> {
     const [updatedProduct] = await db
       .update(products)
       .set(product)
@@ -127,10 +160,15 @@ export class DatabaseStorage implements IStorage {
       .from(stockAdjustments)
       .where(eq(stockAdjustments.productId, id));
 
-    const totalRelated = Number(productionCount.count) + Number(salesCount.count) + Number(adjustmentCount.count);
-    
+    const totalRelated =
+      Number(productionCount.count) +
+      Number(salesCount.count) +
+      Number(adjustmentCount.count);
+
     if (totalRelated > 0) {
-      throw new Error(`Cannot delete product. It has ${totalRelated} related records (production, sales, or stock adjustments). Please remove those records first.`);
+      throw new Error(
+        `Cannot delete product. It has ${totalRelated} related records (production, sales, or stock adjustments). Please remove those records first.`
+      );
     }
 
     await db.delete(products).where(eq(products.id, id));
@@ -167,9 +205,11 @@ export class DatabaseStorage implements IStorage {
       .where(eq(salesOrders.partyId, id));
 
     const totalRelated = Number(salesOrderCount.count);
-    
+
     if (totalRelated > 0) {
-      throw new Error(`Cannot delete party. It has ${totalRelated} related sales orders. Please remove those orders first.`);
+      throw new Error(
+        `Cannot delete party. It has ${totalRelated} related sales orders. Please remove those orders first.`
+      );
     }
 
     await db.delete(parties).where(eq(parties.id, id));
@@ -181,60 +221,83 @@ export class DatabaseStorage implements IStorage {
       .from(production)
       .leftJoin(products, eq(production.productId, products.id))
       .orderBy(desc(production.createdAt))
-      .then(rows => 
-        rows.map(row => ({
+      .then((rows) =>
+        rows.map((row) => ({
           ...row.production,
-          product: row.products!
+          product: row.products ?? null,
         }))
       );
   }
 
-  async getProductionRecord(id: number): Promise<ProductionWithProduct | undefined> {
+  async getProductionRecord(
+    id: number
+  ): Promise<ProductionWithProduct | undefined> {
     const rows = await db
       .select()
       .from(production)
       .leftJoin(products, eq(production.productId, products.id))
       .where(eq(production.id, id));
-    
+
     if (rows.length === 0) return undefined;
-    
+
     const row = rows[0];
     return {
       ...row.production,
-      product: row.products!
+      product: row.products!,
     };
   }
 
-  async createProductionRecord(productionData: InsertProduction): Promise<Production> {
+  async createProductionRecord(
+    productionData: InsertProduction
+  ): Promise<Production> {
     // Get product to calculate pieces
-    const [product] = await db.select().from(products).where(eq(products.id, productionData.productId));
+    const [product] = await db
+      .select()
+      .from(products)
+      .where(eq(products.id, productionData.productId));
     if (!product) throw new Error("Product not found");
 
-    const pieces = Math.floor((parseFloat(productionData.quantityKg) * 1000) / parseFloat(product.weightGrams));
-    
+    const pieces = Math.floor(
+      (parseFloat(productionData.quantityKg) * 1000) /
+        parseFloat(product.weightGrams)
+    );
+
     const [newProduction] = await db
       .insert(production)
       .values({
         ...productionData,
-        pieces
+        pieces,
       })
       .returning();
-    
+
     return newProduction;
   }
 
-  async updateProductionRecord(id: number, productionData: Partial<InsertProduction>): Promise<Production> {
-    let updateData: Partial<InsertProduction> & { pieces?: number } = { ...productionData };
+  async updateProductionRecord(
+    id: number,
+    productionData: Partial<InsertProduction>
+  ): Promise<Production> {
+    let updateData: Partial<InsertProduction> & { pieces?: number } = {
+      ...productionData,
+    };
 
     // Recalculate pieces if quantity or product changed
     if (productionData.quantityKg || productionData.productId) {
-      const [existingRecord] = await db.select().from(production).where(eq(production.id, id));
+      const [existingRecord] = await db
+        .select()
+        .from(production)
+        .where(eq(production.id, id));
       const productId = productionData.productId || existingRecord.productId;
       const quantityKg = productionData.quantityKg || existingRecord.quantityKg;
 
-      const [product] = await db.select().from(products).where(eq(products.id, productId));
+      const [product] = await db
+        .select()
+        .from(products)
+        .where(eq(products.id, productId));
       if (product) {
-        const pieces = Math.floor((parseFloat(quantityKg) * 1000) / parseFloat(product.weightGrams));
+        const pieces = Math.floor(
+          (parseFloat(quantityKg) * 1000) / parseFloat(product.weightGrams)
+        );
         updateData = { ...updateData, pieces };
       }
     }
@@ -244,7 +307,7 @@ export class DatabaseStorage implements IStorage {
       .set(updateData)
       .where(eq(production.id, id))
       .returning();
-    
+
     return updatedProduction;
   }
 
@@ -258,10 +321,10 @@ export class DatabaseStorage implements IStorage {
       .from(salesOrders)
       .leftJoin(parties, eq(salesOrders.partyId, parties.id))
       .orderBy(desc(salesOrders.createdAt))
-      .then(rows =>
-        rows.map(row => ({
+      .then((rows) =>
+        rows.map((row) => ({
           ...row.sales_orders,
-          party: row.parties!
+          party: row.parties ?? null,
         }))
       );
   }
@@ -285,74 +348,92 @@ export class DatabaseStorage implements IStorage {
     return {
       ...orderRow.sales_orders,
       party: orderRow.parties!,
-      items: itemRows.map(row => ({
+      items: itemRows.map((row) => ({
         ...row.sales_order_items,
-        product: row.products!
-      }))
+        product: row.products!,
+      })),
     };
   }
 
-  async createSalesOrder(salesOrderData: InsertSalesOrder, items: InsertSalesOrderItem[]): Promise<SalesOrder> {
+  async createSalesOrder(
+    salesOrderData: InsertSalesOrder,
+    items: InsertSalesOrderItem[]
+  ): Promise<SalesOrder> {
     const [newOrder] = await db
       .insert(salesOrders)
       .values({
         ...salesOrderData,
-        itemCount: items.length
+        itemCount: items.length,
       })
       .returning();
 
     await db.insert(salesOrderItems).values(
-      items.map(item => ({
+      items.map((item) => ({
         ...item,
-        salesOrderId: newOrder.id
+        salesOrderId: newOrder.id,
       }))
     );
 
     return newOrder;
   }
 
-  async updateSalesOrderStatus(id: number, status: "pending" | "partial_invoice" | "fully_invoiced" | "cancelled"): Promise<SalesOrder> {
+  async updateSalesOrderStatus(
+    id: number,
+    status: "pending" | "partial_invoice" | "fully_invoiced" | "cancelled"
+  ): Promise<SalesOrder> {
     const [updatedOrder] = await db
       .update(salesOrders)
       .set({ status })
       .where(eq(salesOrders.id, id))
       .returning();
-    
+
     return updatedOrder;
   }
 
-  async fulfillSalesOrderItems(orderId: number, fulfillments: { itemId: number; quantity: number }[]): Promise<void> {
+  async fulfillSalesOrderItems(
+    orderId: number,
+    fulfillments: { itemId: number; quantity: number }[]
+  ): Promise<void> {
     for (const fulfillment of fulfillments) {
       // Get current order item details
       const [orderItem] = await db
         .select()
         .from(salesOrderItems)
         .where(eq(salesOrderItems.id, fulfillment.itemId));
-      
+
       if (!orderItem) {
         throw new Error(`Order item ${fulfillment.itemId} not found`);
       }
-      
+
       // Calculate remaining quantity that can be fulfilled
       const remainingToFulfill = orderItem.quantity - orderItem.fulfilled;
       if (fulfillment.quantity > remainingToFulfill) {
-        throw new Error(`Cannot fulfill ${fulfillment.quantity} pieces. Only ${remainingToFulfill} pieces remaining to fulfill.`);
+        throw new Error(
+          `Cannot fulfill ${fulfillment.quantity} pieces. Only ${remainingToFulfill} pieces remaining to fulfill.`
+        );
       }
-      
+
       // Get current inventory for this product
       const inventory = await this.getInventory();
-      const productInventory = inventory.find(item => item.id === orderItem.productId);
-      
-      if (!productInventory || productInventory.currentStock < fulfillment.quantity) {
+      const productInventory = inventory.find(
+        (item) => item.id === orderItem.productId
+      );
+
+      if (
+        !productInventory ||
+        productInventory.currentStock < fulfillment.quantity
+      ) {
         const availableStock = productInventory?.currentStock || 0;
-        throw new Error(`Insufficient stock. Available: ${availableStock} pieces, requested: ${fulfillment.quantity} pieces.`);
+        throw new Error(
+          `Insufficient stock. Available: ${availableStock} pieces, requested: ${fulfillment.quantity} pieces.`
+        );
       }
-      
+
       // Only fulfill if validation passes
       await db
         .update(salesOrderItems)
-        .set({ 
-          fulfilled: sql`${salesOrderItems.fulfilled} + ${fulfillment.quantity}`
+        .set({
+          fulfilled: sql`${salesOrderItems.fulfilled} + ${fulfillment.quantity}`,
         })
         .where(eq(salesOrderItems.id, fulfillment.itemId));
     }
@@ -363,10 +444,14 @@ export class DatabaseStorage implements IStorage {
       .from(salesOrderItems)
       .where(eq(salesOrderItems.salesOrderId, orderId));
 
-    const allFulfilled = items.every(item => item.fulfilled >= item.quantity);
-    const anyFulfilled = items.some(item => item.fulfilled > 0);
+    const allFulfilled = items.every((item) => item.fulfilled >= item.quantity);
+    const anyFulfilled = items.some((item) => item.fulfilled > 0);
 
-    let newStatus: "pending" | "partial_invoice" | "fully_invoiced" | "cancelled" = "pending";
+    let newStatus:
+      | "pending"
+      | "partial_invoice"
+      | "fully_invoiced"
+      | "cancelled" = "pending";
     if (allFulfilled) {
       newStatus = "fully_invoiced";
     } else if (anyFulfilled) {
@@ -379,7 +464,9 @@ export class DatabaseStorage implements IStorage {
   async deleteSalesOrder(id: number): Promise<void> {
     // Note: This deletion does NOT add stock back to inventory as per requirements
     // First delete related sales order items
-    await db.delete(salesOrderItems).where(eq(salesOrderItems.salesOrderId, id));
+    await db
+      .delete(salesOrderItems)
+      .where(eq(salesOrderItems.salesOrderId, id));
     // Then delete the sales order
     await db.delete(salesOrders).where(eq(salesOrders.id, id));
   }
@@ -389,17 +476,25 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getStockAdjustments(): Promise<StockAdjustment[]> {
-    return await db.select().from(stockAdjustments).orderBy(desc(stockAdjustments.createdAt));
+    return await db
+      .select()
+      .from(stockAdjustments)
+      .orderBy(desc(stockAdjustments.createdAt));
   }
 
-  async createStockAdjustment(adjustment: InsertStockAdjustment): Promise<StockAdjustment> {
-    const [newAdjustment] = await db.insert(stockAdjustments).values(adjustment).returning();
+  async createStockAdjustment(
+    adjustment: InsertStockAdjustment
+  ): Promise<StockAdjustment> {
+    const [newAdjustment] = await db
+      .insert(stockAdjustments)
+      .values(adjustment)
+      .returning();
     return newAdjustment;
   }
 
   async getInventory(): Promise<InventoryItem[]> {
     const productsData = await db.select().from(products);
-    
+
     const inventory: InventoryItem[] = [];
 
     for (const product of productsData) {
@@ -408,23 +503,27 @@ export class DatabaseStorage implements IStorage {
         .select({ total: sql<number>`COALESCE(SUM(${production.pieces}), 0)` })
         .from(production)
         .where(eq(production.productId, product.id));
-      
+
       const totalProduced = Number(productionResult[0]?.total || 0);
 
       // Get total sold (fulfilled)
       const salesResult = await db
-        .select({ total: sql<number>`COALESCE(SUM(${salesOrderItems.fulfilled}), 0)` })
+        .select({
+          total: sql<number>`COALESCE(SUM(${salesOrderItems.fulfilled}), 0)`,
+        })
         .from(salesOrderItems)
         .where(eq(salesOrderItems.productId, product.id));
-      
+
       const totalSold = Number(salesResult[0]?.total || 0);
 
       // Get stock adjustments
       const adjustmentsResult = await db
-        .select({ total: sql<number>`COALESCE(SUM(${stockAdjustments.quantity}), 0)` })
+        .select({
+          total: sql<number>`COALESCE(SUM(${stockAdjustments.quantity}), 0)`,
+        })
         .from(stockAdjustments)
         .where(eq(stockAdjustments.productId, product.id));
-      
+
       const adjustments = Number(adjustmentsResult[0]?.total || 0);
 
       const currentStock = totalProduced - totalSold + adjustments;
@@ -434,7 +533,7 @@ export class DatabaseStorage implements IStorage {
         currentStock,
         totalProduced,
         totalSold,
-        adjustments
+        adjustments,
       });
     }
 
@@ -449,8 +548,10 @@ export class DatabaseStorage implements IStorage {
     lowStockItems: number;
     monthlyExpense: number;
   }> {
-    const today = new Date().toISOString().split('T')[0];
-    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const today = new Date().toISOString().split("T")[0];
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0];
     const thisMonth = new Date().toISOString().slice(0, 7);
 
     // Today's production
@@ -458,7 +559,7 @@ export class DatabaseStorage implements IStorage {
       .select({ total: sql<number>`COALESCE(SUM(${production.pieces}), 0)` })
       .from(production)
       .where(eq(production.date, today));
-    
+
     const todayProduction = Number(todayProductionResult[0]?.total || 0);
 
     // Yesterday's production
@@ -466,19 +567,23 @@ export class DatabaseStorage implements IStorage {
       .select({ total: sql<number>`COALESCE(SUM(${production.pieces}), 0)` })
       .from(production)
       .where(eq(production.date, yesterday));
-    
-    const yesterdayProduction = Number(yesterdayProductionResult[0]?.total || 0);
+
+    const yesterdayProduction = Number(
+      yesterdayProductionResult[0]?.total || 0
+    );
 
     // Pending orders
     const pendingOrdersResult = await db
       .select({ count: sql<number>`COUNT(*)` })
       .from(salesOrders)
       .where(eq(salesOrders.status, "pending"));
-    
+
     const pendingOrders = Number(pendingOrdersResult[0]?.count || 0);
 
     // Urgent orders (pending orders from more than 7 days ago)
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0];
     const urgentOrdersResult = await db
       .select({ count: sql<number>`COUNT(*)` })
       .from(salesOrders)
@@ -488,25 +593,29 @@ export class DatabaseStorage implements IStorage {
           sql`${salesOrders.date} <= ${sevenDaysAgo}`
         )
       );
-    
+
     const urgentOrders = Number(urgentOrdersResult[0]?.count || 0);
 
     // Low stock items (less than 50 pieces)
     const inventory = await this.getInventory();
-    const lowStockItems = inventory.filter(item => item.currentStock < 50).length;
+    const lowStockItems = inventory.filter(
+      (item) => item.currentStock < 50
+    ).length;
 
     // Monthly expenses (material costs from production)
     const monthlyProductionResult = await db
       .select({
         quantityKg: production.quantityKg,
-        rawMaterialPricePerKg: products.rawMaterialPricePerKg
+        rawMaterialPricePerKg: products.rawMaterialPricePerKg,
       })
       .from(production)
       .innerJoin(products, eq(production.productId, products.id))
       .where(like(production.date, `${thisMonth}%`));
-    
+
     const monthlyExpense = monthlyProductionResult.reduce((total, record) => {
-      const cost = parseFloat(record.quantityKg) * parseFloat(record.rawMaterialPricePerKg);
+      const cost =
+        parseFloat(record.quantityKg) *
+        parseFloat(record.rawMaterialPricePerKg);
       return total + cost;
     }, 0);
 
@@ -516,7 +625,7 @@ export class DatabaseStorage implements IStorage {
       pendingOrders,
       urgentOrders,
       lowStockItems,
-      monthlyExpense
+      monthlyExpense,
     };
   }
 }

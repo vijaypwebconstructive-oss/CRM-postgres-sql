@@ -3,12 +3,15 @@ import { createServer, type Server } from "http";
 import multer from "multer";
 import * as XLSX from "xlsx";
 import { storage } from "./storage";
-import { 
-  insertProductSchema, insertPartySchema, insertProductionSchema, 
-  insertSalesOrderSchema, insertSalesOrderItemSchema, insertStockAdjustmentSchema
+import {
+  insertProductSchema,
+  insertPartySchema,
+  insertProductionSchema,
+  insertSalesOrderSchema,
+  insertSalesOrderItemSchema,
+  insertStockAdjustmentSchema,
 } from "@shared/schema";
 import { z } from "zod";
-import { setupAuth, isAuthenticated, validateCSRF } from "./replitAuth";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -18,44 +21,38 @@ const upload = multer({
   },
   fileFilter: (req, file, cb) => {
     // Accept only Excel files
-    if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
-        file.mimetype === 'application/vnd.ms-excel' ||
-        file.originalname.endsWith('.xlsx') || 
-        file.originalname.endsWith('.xls')) {
+    if (
+      file.mimetype ===
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+      file.mimetype === "application/vnd.ms-excel" ||
+      file.originalname.endsWith(".xlsx") ||
+      file.originalname.endsWith(".xls")
+    ) {
       cb(null, true);
     } else {
-      cb(new Error('Only Excel files are allowed'));
+      cb(new Error("Only Excel files are allowed"));
     }
-  }
+  },
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware - setup authentication first
-  await setupAuth(app);
 
   // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
-  });
-  
+
   // Products
-  app.get("/api/products", isAuthenticated, async (_req, res) => {
-    try {
-      const products = await storage.getProducts();
-      res.json(products);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch products" });
-    }
+  app.get("/api/products", async (_req, res) => {
+    // try {
+    //   const products = await storage.getProducts();
+    //   res.json(products);
+    // } catch (error) {
+    //   res.status(500).json({ message: "Failed to fetch products" });
+    // }
+    const data = await storage.getProducts();
+    res.json(data);
   });
 
-  app.get("/api/products/:id", isAuthenticated, async (req, res) => {
+  app.get("/api/products/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const product = await storage.getProduct(id);
@@ -68,20 +65,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/products", isAuthenticated, validateCSRF, async (req, res) => {
+  app.post("/api/products", async (req, res) => {
     try {
       const validatedData = insertProductSchema.parse(req.body);
       const product = await storage.createProduct(validatedData);
       res.status(201).json(product);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid product data", errors: error.errors });
+        return res
+          .status(400)
+          .json({ message: "Invalid product data", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to create product" });
     }
   });
 
-  app.put("/api/products/:id", isAuthenticated, validateCSRF, async (req, res) => {
+  app.put("/api/products/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const validatedData = insertProductSchema.partial().parse(req.body);
@@ -89,13 +88,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(product);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid product data", errors: error.errors });
+        return res
+          .status(400)
+          .json({ message: "Invalid product data", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to update product" });
     }
   });
 
-  app.delete("/api/products/:id", isAuthenticated, validateCSRF, async (req, res) => {
+  app.delete("/api/products/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.deleteProduct(id);
@@ -109,29 +110,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Parties
-  app.get("/api/parties", isAuthenticated, async (_req, res) => {
-    try {
-      const parties = await storage.getParties();
-      res.json(parties);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch parties" });
-    }
+  app.get("/api/parties", async (_req, res) => {
+    // try {
+    //   const parties = await storage.getParties();
+    //   res.json(parties);
+    // } catch (error) {
+    //   res.status(500).json({ message: "Failed to fetch parties" });
+    // }
+    const data = await storage.getParties();
+    res.json(data);
   });
 
-  app.post("/api/parties", isAuthenticated, validateCSRF, async (req, res) => {
+  app.post("/api/parties", async (req, res) => {
     try {
       const validatedData = insertPartySchema.parse(req.body);
       const party = await storage.createParty(validatedData);
       res.status(201).json(party);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid party data", errors: error.errors });
+        return res
+          .status(400)
+          .json({ message: "Invalid party data", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to create party" });
     }
   });
 
-  app.put("/api/parties/:id", isAuthenticated, validateCSRF, async (req, res) => {
+  app.put("/api/parties/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const validatedData = insertPartySchema.partial().parse(req.body);
@@ -139,13 +144,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(party);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid party data", errors: error.errors });
+        return res
+          .status(400)
+          .json({ message: "Invalid party data", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to update party" });
     }
   });
 
-  app.delete("/api/parties/:id", isAuthenticated, validateCSRF, async (req, res) => {
+  app.delete("/api/parties/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.deleteParty(id);
@@ -159,14 +166,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Bulk upload endpoints
-  app.post("/api/products/bulk", isAuthenticated, validateCSRF, upload.single('excel'), async (req, res) => {
+  app.post("/api/products/bulk", upload.single("excel"), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No Excel file uploaded" });
       }
 
       // Parse Excel file
-      const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
       const data = XLSX.utils.sheet_to_json(worksheet);
@@ -174,7 +181,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const results = {
         success: 0,
         failed: 0,
-        errors: [] as any[]
+        errors: [] as any[],
       };
 
       // Process each row
@@ -183,10 +190,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           // Map Excel columns to our schema
           const productData = {
-            name: String(row['Product Name'] || row['name'] || ''),
-            weightGrams: String(row['Weight (grams)'] || row['weightGrams'] || '0'),
-            rawMaterialType: String(row['Material Type'] || row['rawMaterialType'] || 'Steel'),
-            rawMaterialPricePerKg: String(row['Material Price/KG'] || row['rawMaterialPricePerKg'] || '0')
+            name: String(row["Product Name"] || row["name"] || ""),
+            weightGrams: String(
+              row["Weight (grams)"] || row["weightGrams"] || "0"
+            ),
+            rawMaterialType: String(
+              row["Material Type"] || row["rawMaterialType"] || "Steel"
+            ),
+            rawMaterialPricePerKg: String(
+              row["Material Price/KG"] || row["rawMaterialPricePerKg"] || "0"
+            ),
           };
 
           // Validate data
@@ -198,14 +211,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           results.errors.push({
             row: index + 2, // Excel row number (starting from 2 due to header)
             data: row,
-            error: error instanceof z.ZodError ? error.errors : (error as Error).message
+            error:
+              error instanceof z.ZodError
+                ? error.errors
+                : (error as Error).message,
           });
         }
       }
 
       res.json({
         message: `Bulk upload completed. ${results.success} products added, ${results.failed} failed.`,
-        results
+        results,
       });
     } catch (error) {
       console.error("Bulk upload error:", error);
@@ -213,14 +229,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/parties/bulk", isAuthenticated, validateCSRF, upload.single('excel'), async (req, res) => {
+  app.post("/api/parties/bulk", upload.single("excel"), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No Excel file uploaded" });
       }
 
       // Parse Excel file
-      const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
       const data = XLSX.utils.sheet_to_json(worksheet);
@@ -228,7 +244,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const results = {
         success: 0,
         failed: 0,
-        errors: [] as any[]
+        errors: [] as any[],
       };
 
       // Process each row
@@ -237,11 +253,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           // Map Excel columns to our schema
           const partyData = {
-            name: String(row['Party Name'] || row['name'] || ''),
-            address: String(row['Address'] || row['address'] || ''),
-            pinCode: String(row['Pin Code'] || row['pinCode'] || ''),
-            phoneNumber: String(row['Phone Number'] || row['phoneNumber'] || ''),
-            gstNumber: row['GST Number'] || row['gstNumber'] || null
+            name: String(row["Party Name"] || row["name"] || ""),
+            address: String(row["Address"] || row["address"] || ""),
+            pinCode: String(row["Pin Code"] || row["pinCode"] || ""),
+            phoneNumber: String(
+              row["Phone Number"] || row["phoneNumber"] || ""
+            ),
+            gstNumber: row["GST Number"] || row["gstNumber"] || null,
           };
 
           // Validate data
@@ -253,14 +271,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           results.errors.push({
             row: index + 2, // Excel row number (starting from 2 due to header)
             data: row,
-            error: error instanceof z.ZodError ? error.errors : (error as Error).message
+            error:
+              error instanceof z.ZodError
+                ? error.errors
+                : (error as Error).message,
           });
         }
       }
 
       res.json({
         message: `Bulk upload completed. ${results.success} parties added, ${results.failed} failed.`,
-        results
+        results,
       });
     } catch (error) {
       console.error("Bulk upload error:", error);
@@ -269,43 +290,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Production
-  app.get("/api/production", isAuthenticated, async (_req, res) => {
-    try {
-      const production = await storage.getProduction();
-      res.json(production);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch production records" });
-    }
+  app.get("/api/production", async (_req, res) => {
+    // try {
+    //   const production = await storage.getProduction();
+    //   res.json(production);
+    // } catch (error) {
+    //   res.status(500).json({ message: "Failed to fetch production records" });
+    // }
+
+    const data = await storage.getProduction();
+    res.json(data);
   });
 
-  app.post("/api/production", isAuthenticated, validateCSRF, async (req, res) => {
+  app.post("/api/production", async (req, res) => {
     try {
       const validatedData = insertProductionSchema.parse(req.body);
       const production = await storage.createProductionRecord(validatedData);
       res.status(201).json(production);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid production data", errors: error.errors });
+        return res
+          .status(400)
+          .json({ message: "Invalid production data", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to create production record" });
     }
   });
 
-  app.put("/api/production/:id", isAuthenticated, validateCSRF, async (req, res) => {
+  app.put("/api/production/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const validatedData = insertProductionSchema.partial().parse(req.body);
-      const production = await storage.updateProductionRecord(id, validatedData);
+      const production = await storage.updateProductionRecord(
+        id,
+        validatedData
+      );
       res.json(production);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid production data", errors: error.errors });
+        return res
+          .status(400)
+          .json({ message: "Invalid production data", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to update production record" });
     }
   });
 
-  app.delete("/api/production/:id", isAuthenticated, validateCSRF, async (req, res) => {
+  app.delete("/api/production/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.deleteProductionRecord(id);
@@ -316,16 +347,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Sales Orders
-  app.get("/api/sales", isAuthenticated, async (_req, res) => {
-    try {
-      const salesOrders = await storage.getSalesOrders();
-      res.json(salesOrders);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch sales orders" });
-    }
+  app.get("/api/sales", async (_req, res) => {
+    // try {
+    //   const salesOrders = await storage.getSalesOrders();
+    //   res.json(salesOrders);
+    // } catch (error) {
+    //   res.status(500).json({ message: "Failed to fetch sales orders" });
+    // }
+    const data = await storage.getSalesOrders();
+    res.json(data);
   });
 
-  app.get("/api/sales/:id", isAuthenticated, async (req, res) => {
+  app.get("/api/sales/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const salesOrder = await storage.getSalesOrder(id);
@@ -338,27 +371,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/sales", isAuthenticated, validateCSRF, async (req, res) => {
+  app.post("/api/sales", async (req, res) => {
     try {
       const { order, items } = req.body;
       const validatedOrder = insertSalesOrderSchema.parse(order);
       const validatedItems = z.array(insertSalesOrderItemSchema).parse(items);
-      
-      const salesOrder = await storage.createSalesOrder(validatedOrder, validatedItems);
+
+      const salesOrder = await storage.createSalesOrder(
+        validatedOrder,
+        validatedItems
+      );
       res.status(201).json(salesOrder);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid sales order data", errors: error.errors });
+        return res
+          .status(400)
+          .json({ message: "Invalid sales order data", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to create sales order" });
     }
   });
 
-  app.post("/api/sales/:id/fulfill", isAuthenticated, validateCSRF, async (req, res) => {
+  app.post("/api/sales/:id/fulfill", async (req, res) => {
     try {
       const orderId = parseInt(req.params.id);
       const { fulfillments } = req.body;
-      
+
       await storage.fulfillSalesOrderItems(orderId, fulfillments);
       res.json({ message: "Order fulfilled successfully" });
     } catch (error) {
@@ -369,7 +407,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/sales/:id", isAuthenticated, validateCSRF, async (req, res) => {
+  app.delete("/api/sales/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.deleteSalesOrder(id);
@@ -379,7 +417,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/sales/:id/cancel", isAuthenticated, validateCSRF, async (req, res) => {
+  app.put("/api/sales/:id/cancel", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const salesOrder = await storage.cancelInvoice(id);
@@ -390,7 +428,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Stock Adjustments
-  app.get("/api/stock-adjustments", isAuthenticated, async (_req, res) => {
+  app.get("/api/stock-adjustments", async (_req, res) => {
     try {
       const adjustments = await storage.getStockAdjustments();
       res.json(adjustments);
@@ -399,38 +437,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/stock-adjustments", isAuthenticated, validateCSRF, async (req, res) => {
+  app.post("/api/stock-adjustments", async (req, res) => {
     try {
       const validatedData = insertStockAdjustmentSchema.parse(req.body);
       const adjustment = await storage.createStockAdjustment(validatedData);
       res.status(201).json(adjustment);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid stock adjustment data", errors: error.errors });
+        return res.status(400).json({
+          message: "Invalid stock adjustment data",
+          errors: error.errors,
+        });
       }
       res.status(500).json({ message: "Failed to create stock adjustment" });
     }
   });
 
   // Inventory
-  app.get("/api/inventory", isAuthenticated, async (_req, res) => {
-    try {
-      const inventory = await storage.getInventory();
-      res.json(inventory);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch inventory" });
-    }
+  app.get("/api/inventory", async (_req, res) => {
+    // try {
+    //   const inventory = await storage.getInventory();
+    //   res.json(inventory);
+    // } catch (error) {
+    //   res.status(500).json({ message: "Failed to fetch inventory" });
+    // }
+
+    const data = await storage.getInventory();
+    res.json(data);
   });
 
   // Dashboard
-  app.get("/api/dashboard/metrics", isAuthenticated, async (_req, res) => {
-    try {
-      const metrics = await storage.getDashboardMetrics();
-      res.json(metrics);
-    } catch (error) {
-      console.error("Dashboard metrics error:", error);
-      res.status(500).json({ message: "Failed to fetch dashboard metrics" });
-    }
+  app.get("/api/dashboard/metrics", async (_req, res) => {
+    // try {
+    //   const metrics = await storage.getDashboardMetrics();
+    //   res.json(metrics);
+    // } catch (error) {
+    //   console.error("Dashboard metrics error:", error);
+    //   res.status(500).json({ message: "Failed to fetch dashboard metrics" });
+    // }
+    const metrics = await storage.getDashboardMetrics();
+    res.json(metrics);
   });
 
   const httpServer = createServer(app);
